@@ -1,0 +1,1379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="theme-color" content="#f6cdd8">
+<title>DUOTUNE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --ivory:#fff9f5; --blush:#fbe4ea; --blush2:#f4c9d4; --rose:#dc8fa5; --rose2:#bf6a85;
+  --ink:#1f1519; --mut:rgba(31,21,25,.55); --hair:rgba(31,21,25,.09);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter",system-ui,sans-serif;
+  --serif:"Cormorant Garamond","Iowan Old Style",Georgia,serif;
+  --tab:60px; --top:52px; --ease:cubic-bezier(.3,.8,.3,1);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:#f2c3cf;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input{font:inherit;color:inherit}
+button{border:0;background:none;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--rose2);outline-offset:3px}
+.hidden{display:none!important}
+.i{width:24px;height:24px;display:block;flex:none}
+
+/* ============ SHELL ============ */
+#app{position:relative;width:100%;max-width:480px;height:100dvh;margin:0 auto;overflow:hidden;
+  background:linear-gradient(172deg,#fdeef2 0%,#f8d6df 48%,#efb7c8 100%)}
+.bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(64px);opacity:.55;animation:drift 26s ease-in-out infinite alternate}
+.blob.a{width:340px;height:340px;background:#ffd9c9;top:-90px;left:-110px}
+.blob.b{width:380px;height:380px;background:#e58fa9;bottom:-140px;right:-150px;animation-duration:32s;opacity:.4}
+.blob.c{width:240px;height:240px;background:#fff6ee;top:38%;left:46%;animation-duration:38s;opacity:.5}
+@keyframes drift{to{transform:translate3d(46px,-38px,0) scale(1.14)}}
+
+/* ============ WELCOME ============ */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top) + 30px) 28px calc(env(safe-area-inset-bottom) + 26px);transition:opacity .45s,transform .45s var(--ease)}
+.screen.leave{opacity:0;transform:scale(1.02);pointer-events:none}
+.wordmark{font-weight:600;letter-spacing:.34em;font-size:12px;text-transform:uppercase}
+.wordmark b{color:var(--rose2);font-weight:600}
+.w-main{margin-top:10vh;animation:rise .9s var(--ease) both .1s}
+.hello{font-size:clamp(42px,12.5vw,58px);line-height:1.02;font-weight:600;letter-spacing:-.045em;margin:0 0 20px}
+.hello em{font-family:var(--serif);font-style:italic;font-weight:600;letter-spacing:-.02em;font-size:1.14em}
+.hello .h{color:var(--rose2);font-weight:400}
+.f{display:block;width:100%;background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.8);border-radius:16px;
+  padding:17px 18px;font-size:16px;margin-bottom:10px;outline:none;transition:background .2s,border-color .2s}
+.f::placeholder{color:rgba(31,21,25,.38)}
+.f:focus{background:rgba(255,255,255,.85);border-color:var(--rose)}
+.code-f{letter-spacing:.14em;text-transform:uppercase}
+.code-f::placeholder{letter-spacing:0;text-transform:none}
+.primary{width:100%;height:58px;border-radius:29px;background:var(--ink);color:var(--ivory);font-weight:600;font-size:16px;
+  display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;transition:transform .2s,background .2s}
+.primary:active{transform:scale(.98)}
+.w-foot{margin-top:26px;text-align:center;font-family:var(--serif);font-style:italic;font-size:17px;color:var(--mut)}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+/* ============ ROOM FRAME ============ */
+#room{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;transition:opacity .6s}
+#room.in{opacity:1}
+.top{flex:none;height:calc(var(--top) + env(safe-area-inset-top));padding:env(safe-area-inset-top) 18px 0;display:flex;align-items:center;justify-content:center;position:relative;z-index:3}
+.pill{display:flex;align-items:center;gap:0;height:36px;padding:0 12px 0 5px;border-radius:18px;background:rgba(255,255,255,.5)}
+.av{position:relative;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700}
+.av.me{background:var(--ink);color:var(--ivory)}
+.av.her{background:var(--rose);color:#fff}
+.av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:8px;height:8px;border-radius:50%;background:#b9a9ae;border:1.5px solid #fbe4ea}
+.av.on::after{background:#5fb48a}
+.link{display:flex;align-items:flex-end;gap:2px;height:12px;margin:0 9px;opacity:.35}
+.link i{width:2px;border-radius:1px;background:var(--rose2);height:4px}
+.pill.together .link{opacity:1}
+.pill.together.playing .link i{animation:eq 1s ease-in-out infinite}
+.link i:nth-child(2){animation-delay:.2s!important}.link i:nth-child(3){animation-delay:.4s!important}
+@keyframes eq{0%,100%{height:4px}50%{height:12px}}
+main{flex:1;position:relative;min-height:0}
+.view{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity .4s,transform .45s var(--ease)}
+.view.active{opacity:1;pointer-events:auto;transform:none}
+
+/* tab bar */
+.tabbar{flex:none;height:calc(var(--tab) + env(safe-area-inset-bottom));padding:0 34px env(safe-area-inset-bottom);display:flex;align-items:center;justify-content:space-around;
+  background:rgba(255,249,245,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--hair);position:relative;z-index:3}
+.tab{position:relative;width:64px;height:40px;border-radius:20px;display:grid;place-items:center;color:var(--mut);transition:background .25s,color .25s}
+.tab.active{background:rgba(31,21,25,.07);color:var(--ink)}
+.tab .dot{position:absolute;top:7px;right:17px;width:8px;height:8px;border-radius:50%;background:var(--rose2);border:1.5px solid var(--ivory)}
+
+/* ============ NOW PLAYING ============ */
+#v-player{padding:0 30px 10px;align-items:stretch}
+.art-stage{flex:1;min-height:0;display:grid;place-items:center}
+.art{width:clamp(190px,calc(100dvh - 440px),100%);aspect-ratio:1;border-radius:14px;overflow:hidden;position:relative;
+  box-shadow:0 26px 50px -18px rgba(150,70,100,.45);transition:transform .6s var(--ease),box-shadow .6s;transform:scale(.86)}
+.playing .art{transform:scale(1)}
+.art img{width:100%;height:100%;object-fit:cover;display:block}
+.art-css{position:absolute;inset:0;background:radial-gradient(circle at 62% 38%,var(--s,#fff3e8) 0 15%,transparent 15.5%),linear-gradient(160deg,var(--a),var(--b))}
+.art-css::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-8%;height:38%;border-radius:50% 50% 0 0;background:linear-gradient(var(--c),var(--d));opacity:.9}
+.mini-art{width:44px;height:44px;border-radius:8px;overflow:hidden;position:relative;flex:none}
+.q-art{width:46px;height:46px;border-radius:8px;overflow:hidden;position:relative;flex:none}
+.mini-art .art-css,.q-art .art-css{border-radius:0}
+.info{display:flex;align-items:center;gap:14px;margin-top:20px}
+.info .t{flex:1;min-width:0}
+.title{font-size:22px;font-weight:650;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist{font-size:17px;color:var(--rose2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.round{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(31,21,25,.07);flex:none}
+.round .i{width:20px;height:20px}
+.heart{color:var(--ink)}
+.heart.on{color:var(--rose2);--hf:var(--rose2)}
+.heart.on .i{animation:pop .4s var(--ease)}
+@keyframes pop{40%{transform:scale(1.3)}}
+
+.range{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;outline:none;margin:0;
+  background:linear-gradient(to right,var(--ink) var(--p,0%),rgba(31,21,25,.14) var(--p,0%));touch-action:none}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:0;height:0;border-radius:50%;background:var(--ink);transition:all .15s}
+.range:active::-webkit-slider-thumb{width:14px;height:14px}
+.range::-moz-range-track{background:transparent;height:5px}
+.range::-moz-range-thumb{width:0;height:0;border:0;background:var(--ink)}
+.seekwrap{margin-top:16px;padding:8px 0}
+.times{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;margin-top:6px}
+.transport{display:flex;align-items:center;justify-content:space-between;padding:0 4px;margin-top:4px}
+.transport button{display:grid;place-items:center;color:var(--ink);transition:transform .15s}
+.transport button:active{transform:scale(.88)}
+.t-skip .i{width:30px;height:30px;opacity:.7}
+.t-step .i{width:36px;height:36px}
+.t-play .i{width:62px;height:62px}
+.flip{transform:scaleX(-1)}
+.vol{display:flex;align-items:center;gap:12px;margin:18px 4px 6px;color:var(--mut)}
+.vol .i{width:18px;height:18px}
+
+/* ============ LYRICS + CHAT ============ */
+.l-head{flex:none;display:flex;align-items:center;gap:12px;padding:2px 22px 10px}
+.l-head .t{flex:1;min-width:0}
+.l-head .title{font-size:16px}.l-head .artist{font-size:14px}
+#lyrics{flex:1;min-height:0;position:relative;overflow-y:auto;scrollbar-width:none;padding:0 26px;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 86%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 86%,transparent 100%)}
+#lyrics::-webkit-scrollbar{display:none}
+.pad{height:30%}.pad.b{height:70%}
+.line{font-size:27px;line-height:1.22;font-weight:700;letter-spacing:-.025em;padding:9px 0;cursor:pointer;
+  transform-origin:left center;transform:scale(.93);opacity:max(.22,calc(1 - var(--d,4)*.3));filter:blur(calc(var(--d,4)*.55px));
+  transition:transform .6s var(--ease),opacity .6s,filter .6s,color .4s}
+.line.active{transform:scale(1);opacity:1;filter:none}
+.line.picked{color:var(--rose2)}
+.lyr-empty{font-family:var(--serif);font-style:italic;font-size:24px;color:var(--mut);padding-top:20vh;text-align:center}
+
+.dock{flex:none;position:relative;background:rgba(255,249,245,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-radius:22px 22px 0 0;padding:4px 14px 12px;box-shadow:0 -10px 30px -18px rgba(150,70,100,.35)}
+.grab{display:block;width:100%;height:18px;position:relative}
+.grab::after{content:"";position:absolute;left:50%;top:7px;width:36px;height:4px;border-radius:2px;background:rgba(31,21,25,.18);transform:translateX(-50%)}
+.msgwrap{height:0;overflow:hidden;transition:height .4s var(--ease)}
+.dock.open .msgwrap{height:min(34dvh,300px)}
+.msgs{height:100%;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;gap:6px;padding:4px 2px 10px}
+.msgs::-webkit-scrollbar{display:none}
+.m{max-width:80%;display:flex;flex-direction:column;animation:rise .35s var(--ease) both}
+.m.me{align-self:flex-end;align-items:flex-end}
+.m.her{align-self:flex-start}
+.mb{padding:9px 14px;border-radius:19px;font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+.m.me .mb{background:var(--rose2);color:#fff;border-bottom-right-radius:6px}
+.m.her .mb{background:#fff;border-bottom-left-radius:6px}
+.mq{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--rose2);border-left:2px solid var(--rose);padding:1px 0 1px 9px;margin:0 4px 4px;max-width:100%}
+.m.me .mq{text-align:right;border-left:0;border-right:2px solid var(--rose);padding:1px 9px 1px 0}
+.floats{position:absolute;left:14px;right:14px;bottom:100%;margin-bottom:8px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.dock.open .floats{display:none}
+.floats .m{animation:rise .35s var(--ease) both,fade .6s 6s forwards}
+@keyframes fade{to{opacity:0;transform:translateY(-6px)}}
+.quote{display:flex;align-items:center;gap:8px;margin:0 2px 8px;padding:7px 8px 7px 12px;border-radius:14px;background:rgba(220,143,165,.16)}
+.quote span{flex:1;min-width:0;font-family:var(--serif);font-style:italic;font-size:16px;color:var(--rose2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quote button{width:24px;height:24px;color:var(--mut)}.quote .i{width:16px;height:16px}
+.reacts{display:flex;justify-content:space-between;padding:0 6px 8px}
+.reacts button{font-size:22px;width:44px;height:36px;border-radius:18px;transition:transform .15s,background .15s}
+.reacts button:active{transform:scale(1.25);background:rgba(220,143,165,.2)}
+.chat-form{display:flex;gap:8px;align-items:center}
+.chat-form input{flex:1;min-width:0;height:44px;border-radius:22px;border:1px solid var(--hair);background:#fff;padding:0 18px;font-size:16px;outline:none}
+.chat-form input:focus{border-color:var(--rose)}
+.send{width:44px;height:44px;border-radius:50%;background:var(--rose2);color:#fff;display:grid;place-items:center;flex:none;transition:transform .15s,opacity .2s}
+.send:active{transform:scale(.9)}.send:disabled{opacity:.35}
+
+/* ============ LIBRARY ============ */
+#v-library{padding:0 20px}
+.seg{display:flex;background:rgba(31,21,25,.07);border-radius:12px;padding:3px;margin:2px 0 14px;flex:none}
+.seg button{flex:1;height:34px;border-radius:10px;font-size:14px;font-weight:600;color:var(--mut);transition:all .25s}
+.seg button.on{background:var(--ivory);color:var(--ink);box-shadow:0 1px 4px rgba(150,70,100,.15)}
+.pane{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;padding-bottom:84px}
+.pane::-webkit-scrollbar{display:none}
+.add-row{display:flex;gap:8px;margin-bottom:6px}
+.add-row .f{margin:0;padding:12px 16px;border-radius:14px;font-size:16px}
+.add-btn{flex:none;height:46px;padding:0 16px;border-radius:14px;background:var(--ink);color:var(--ivory);font-weight:600;font-size:14px}
+.row{display:flex;align-items:center;gap:12px;padding:9px 6px;border-radius:12px;width:100%;text-align:left}
+.row:active{background:rgba(255,255,255,.5)}
+.row .t{flex:1;min-width:0}
+.row .n{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-size:14px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.cur .n{color:var(--rose2)}
+.q-remove{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--mut);background:rgba(31,21,25,.06);font-size:18px;flex:none}
+.pl-meta{font-size:11px;color:var(--mut);margin-top:3px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:14px;width:16px;flex:none}
+.bars i{flex:1;background:var(--rose2);border-radius:1px;height:4px}
+.playing .row.cur .bars i{animation:eq .9s ease-in-out infinite}
+.bars i:nth-child(2){animation-delay:.25s!important}.bars i:nth-child(3){animation-delay:.5s!important}
+.label{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:18px 6px 8px}
+.pl-ico{width:46px;height:46px;border-radius:10px;background:rgba(255,255,255,.55);display:grid;place-items:center;color:var(--rose2);flex:none}
+.empty{font-family:var(--serif);font-style:italic;font-size:19px;color:var(--mut);text-align:center;padding:26px 0}
+.room-foot{text-align:center;font-size:11px;letter-spacing:.2em;color:rgba(31,21,25,.35);padding:22px 0 6px}
+.minibar{position:absolute;left:12px;right:12px;bottom:10px;display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;border-radius:16px;background:rgba(255,249,245,.9);box-shadow:0 10px 30px -14px rgba(150,70,100,.5)}
+.minibar .t{flex:1;min-width:0}
+.minibar .title{font-size:15px}.minibar .artist{font-size:13px}
+.minibar .pp{width:38px;height:38px;display:grid;place-items:center}.minibar .pp .i{width:26px;height:26px}
+
+/* ============ OVERLAYS ============ */
+#fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:6}
+.rx{position:absolute;bottom:150px;font-size:34px;animation:rise-fx 2.6s ease-out forwards}
+@keyframes rise-fx{0%{opacity:0;transform:translateY(0) scale(.5)}12%{opacity:1}100%{opacity:0;transform:translateY(-340px) translateX(var(--dx,0)) scale(1.25)}}
+.banner{position:absolute;left:12px;right:12px;top:calc(env(safe-area-inset-top) + 8px);z-index:8;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:18px;
+  background:rgba(255,249,245,.94);box-shadow:0 14px 34px -14px rgba(150,70,100,.55);transform:translateY(-140%);transition:transform .5s var(--ease);text-align:left;width:calc(100% - 24px)}
+.banner.show{transform:none}
+.banner .t{flex:1;min-width:0}
+.banner .n{font-size:13px;font-weight:700}
+.banner .s{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet-bg{position:absolute;inset:0;background:rgba(31,21,25,.28);z-index:9;opacity:0;pointer-events:none;transition:opacity .35s}
+.sheet-bg.show{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:10;background:var(--ivory);border-radius:26px 26px 0 0;padding:10px 24px calc(env(safe-area-inset-bottom) + 24px);
+  transform:translateY(105%);transition:transform .5s var(--ease)}
+.sheet.show{transform:none}
+.sheet .gr{width:36px;height:4px;border-radius:2px;background:rgba(31,21,25,.18);margin:0 auto 20px}
+.who{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:17px;font-weight:600}
+.who small{margin-left:auto;font-size:13px;font-weight:500;color:var(--mut)}
+.code-box{display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px;padding:14px 16px;border-radius:16px;background:var(--blush)}
+.code-box strong{font-size:22px;letter-spacing:.2em;font-weight:600}
+.code-box button{color:var(--rose2);width:34px;height:34px;display:grid;place-items:center}
+.leave-btn{width:100%;height:50px;margin-top:10px;font-size:15px;font-weight:600;color:var(--rose2)}
+.toast{position:absolute;left:50%;bottom:calc(var(--tab) + env(safe-area-inset-bottom) + 90px);transform:translate(-50%,10px);z-index:11;background:var(--ink);color:var(--ivory);
+  padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;transition:all .35s var(--ease);white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- Icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><rect x="4.5" y="5" width="2.4" height="14" rx="1" fill="currentColor"/><path d="M19.5 5.9v12.2a.8.8 0 0 1-1.2.7l-8.6-6.1a.8.8 0 0 1 0-1.4l8.6-6.1a.8.8 0 0 1 1.2.7z" fill="currentColor"/></symbol>
+  <symbol id="i-back15" viewBox="0 0 24 24"><path d="M12 5a8 8 0 1 1-7.5 5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 2.2 8.6 5 12 7.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><text x="12" y="15.4" text-anchor="middle" font-size="7.6" font-weight="700" fill="currentColor" font-family="Inter,sans-serif">15</text></symbol>
+  <symbol id="i-fwd15" viewBox="0 0 24 24"><path d="M12 5a8 8 0 1 0 7.5 5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 2.2 15.4 5 12 7.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><text x="12" y="15.4" text-anchor="middle" font-size="7.6" font-weight="700" fill="currentColor" font-family="Inter,sans-serif">15</text></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.2s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.4c0 5.6-7.5 10.2-7.5 10.2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" style="fill:var(--hf,none)"/></symbol>
+  <symbol id="i-lyrics" viewBox="0 0 24 24"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-7l-4 3.2v-3.2H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 10h8M8 12.8h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 17.5V6.5l9-2v11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7" cy="17.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="16" cy="15.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 7h10M4 11.5h10M4 16h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M19 15V6.5l-3.2.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="17.2" cy="16" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  <symbol id="i-vlow" viewBox="0 0 24 24"><path d="M4 9.5h3l4-3.5v12l-4-3.5H4z" fill="currentColor"/></symbol>
+  <symbol id="i-vhigh" viewBox="0 0 24 24"><path d="M4 9.5h3l4-3.5v12l-4-3.5H4z" fill="currentColor"/><path d="M14.5 9.5a3.5 3.5 0 0 1 0 5M17 7a7 7 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 18V6M6.5 11.5 12 6l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5 15V7a2 2 0 0 1 2-2h8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M9 6h8v8M17 6 7 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div id="app">
+  <div class="bg"><div class="blob a"></div><div class="blob b"></div><div class="blob c"></div></div>
+
+  <!-- =============== WELCOME =============== -->
+  <section class="screen" id="welcome">
+    <form class="w-main" id="welcomeForm" autocomplete="off">
+      <h1 class="hello">Hello,<br><em id="helloName">Kiran</em> <span class="h">♡</span></h1>
+      <input class="f" id="nameInput" placeholder="Your name" maxlength="20" aria-label="Your name">
+      <input class="f" id="roomCodeInput" placeholder="Room code" value="KIRANUU" maxlength="32" aria-label="Room code" autocomplete="off">
+      <input class="f" id="roomPasswordInput" type="password" placeholder="Room password" maxlength="128" aria-label="Room password" autocomplete="current-password" required>
+      <label for="avatarInput" id="avatarPick" style="display:flex;align-items:center;gap:10px;margin:2px 0 10px;padding:10px 14px;border:1px solid rgba(40,25,30,.15);border-radius:14px;color:var(--mut);font-size:14px;cursor:pointer">
+        <span id="avatarPreview" style="width:34px;height:34px;border-radius:50%;background:var(--blush);display:grid;place-items:center;overflow:hidden;font-weight:700;color:var(--ink)">♡</span>
+        <span id="avatarPickText">Add your profile picture</span><span style="margin-left:auto">＋</span>
+      </label>
+      <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+      <button class="primary" id="goBtn" type="submit"><span id="goLabel">Create our room</span><svg class="i"><use href="#i-arrow"/></svg></button>
+    </form>
+  </section>
+
+  <!-- =============== ROOM =============== -->
+  <div id="room" class="hidden">
+    <header class="top">
+      <button class="pill" id="pill" aria-label="Room">
+        <span class="av me on" id="avMe">K</span>
+        <span class="link"><i></i><i></i><i></i></span>
+        <span class="av her" id="avHer">♡</span>
+      </button>
+    </header>
+
+    <main>
+      <!-- NOW PLAYING -->
+      <section class="view active" id="v-player">
+        <div class="art-stage"><div class="art" id="art"></div></div>
+        <div class="info">
+          <div class="t"><div class="title" id="title">Pick your first song</div><div class="artist" id="artist">Add one in Library</div></div>
+          <button class="round heart" id="fav" aria-label="Favourite"><svg class="i"><use href="#i-heart"/></svg></button>
+        </div>
+        <div class="seekwrap">
+          <input class="range" id="seek" type="range" min="0" max="1000" value="0" aria-label="Progress">
+          <div class="times"><span id="elapsed">0:00</span><span id="remain">-0:00</span></div>
+        </div>
+        <div class="transport">
+          <button class="t-skip" id="back15" aria-label="Back 15 seconds"><svg class="i"><use href="#i-back15"/></svg></button>
+          <button class="t-step" id="prev" aria-label="Previous"><svg class="i"><use href="#i-prev"/></svg></button>
+          <button class="t-play" id="play" aria-label="Play"><svg class="i"><use href="#i-play"/></svg></button>
+          <button class="t-step" id="next" aria-label="Next"><svg class="i flip"><use href="#i-prev"/></svg></button>
+          <button class="t-skip" id="fwd15" aria-label="Forward 15 seconds"><svg class="i"><use href="#i-fwd15"/></svg></button>
+        </div>
+        <div class="vol">
+          <svg class="i"><use href="#i-vlow"/></svg>
+          <input class="range" id="vol" type="range" min="0" max="100" value="75" aria-label="Volume">
+          <svg class="i"><use href="#i-vhigh"/></svg>
+        </div>
+      </section>
+
+      <!-- LYRICS + CHAT -->
+      <section class="view" id="v-lyrics">
+        <div class="l-head">
+          <div class="mini-art" id="miniArt"></div>
+          <div class="t"><div class="title" id="title2"></div><div class="artist" id="artist2"></div></div>
+          <button class="round" id="play2" aria-label="Play"><svg class="i"><use href="#i-play"/></svg></button>
+        </div>
+        <div id="lyrics"></div><div id="lyricsSource" style="padding:0 26px 10px;text-align:center;font-size:11px;opacity:.55"></div>
+        <div class="dock" id="dock">
+          <div class="floats" id="floats"></div>
+          <button class="grab" id="grab" aria-label="Show conversation"></button>
+          <div class="msgwrap"><div class="msgs" id="msgs"></div></div>
+          <div class="quote hidden" id="quote"><span id="quoteText"></span><button id="quoteX" aria-label="Remove quote"><svg class="i"><use href="#i-x"/></svg></button></div>
+          <div class="reacts" id="reacts"></div>
+          <form class="chat-form" id="chatForm" autocomplete="off">
+            <input id="chatInput" placeholder="Say something, or tap a lyric" enterkeyhint="send" aria-label="Message">
+            <button class="send" id="sendBtn" aria-label="Send" disabled><svg class="i"><use href="#i-send"/></svg></button>
+          </form>
+        </div>
+      </section>
+
+      <!-- LIBRARY -->
+      <section class="view" id="v-library">
+        <div class="seg" id="seg"><button class="on" data-pane="paneQueue">Queue</button><button data-pane="panePl">Playlists</button></div>
+
+        <div class="pane" id="paneQueue">
+          <form class="add-row" id="addForm" autocomplete="off">
+            <input class="f" id="addInput" placeholder="Search, or paste a YouTube link" aria-label="Search or paste a YouTube link">
+            <button class="add-btn" type="submit">Add</button>
+          </form>
+          <div id="results"></div>
+          <div style="display:flex;justify-content:flex-end;padding:4px 4px 2px"><button type="button" id="clearQueueBtn" class="add-btn" style="height:34px;padding:0 12px">Clear queue</button></div>
+          <div id="queue"></div>
+        </div>
+
+        <div class="pane hidden" id="panePl">
+          <div class="label" id="lblMine">Yours</div>
+          <form class="add-row" data-owner="me"><input class="f" placeholder="Paste your playlist link" aria-label="Your playlist link"><button class="add-btn" type="submit">Add</button></form>
+          <div style="display:flex;justify-content:flex-end;padding:4px 2px 10px"><input id="spotifyCsvInput" type="file" accept=".csv,text/csv" hidden><button class="add-btn" id="spotifyCsvBtn" type="button">Import Spotify CSV</button></div>
+          <div id="plMe"></div>
+          <div class="label" id="lblHer">Hers</div>
+          <div class="label" style="font-size:11px;letter-spacing:0;text-transform:none;margin-top:-4px">Playlists she adds appear here automatically</div>
+          <div id="plHer"></div>
+          <div class="room-foot" id="footCode"></div>
+        </div>
+
+        <div class="minibar" id="minibar">
+          <div class="mini-art" id="miniArt2"></div>
+          <div class="t"><div class="title" id="title3"></div><div class="artist" id="artist3"></div></div>
+          <button class="pp" id="play3" aria-label="Play"><svg class="i"><use href="#i-play"/></svg></button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="tabbar" aria-label="Sections">
+      <button class="tab active" data-v="player" aria-label="Now playing"><svg class="i"><use href="#i-note"/></svg></button>
+      <button class="tab" data-v="lyrics" aria-label="Lyrics and chat"><svg class="i"><use href="#i-lyrics"/></svg><span class="dot hidden" id="unreadDot"></span></button>
+      <button class="tab" data-v="library" aria-label="Library"><svg class="i"><use href="#i-list"/></svg></button>
+    </nav>
+  </div>
+
+  <!-- overlays -->
+  <input id="duotune-avatar-file" type="file" accept="image/*" hidden>
+  <div id="fx"></div>
+  <button class="banner" id="banner"><span class="av her" id="banAv">♡</span><span class="t"><div class="n" id="banName"></div><div class="s" id="banText"></div></span></button>
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet" id="sheet">
+    <div class="gr"></div>
+    <div class="who"><span class="av me on" id="shMeAv">K</span><span id="shMeName">You</span><small>You</small></div>
+    <div class="who"><span class="av her" id="shHerAv">♡</span><span id="shHerName">Waiting</span><small id="shHerState">Not here yet</small></div>
+    <div class="code-box"><strong id="shCode">—</strong><button id="copyCode" aria-label="Copy invite link"><svg class="i"><use href="#i-copy"/></svg></button></div>
+    <button class="leave-btn" id="reviewRequestsBtn" style="margin-bottom:8px">Review access requests</button>
+    <button class="leave-btn" id="leaveBtn">Leave room</button>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <!-- Compact, visible YouTube player. YouTube requires an actual visible embedded player. -->
+  <section id="duotune-audio-deck" aria-label="Audio player" style="display:none;position:fixed;right:16px;bottom:84px;z-index:30;width:min(320px,calc(100vw - 32px));padding:10px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(18,18,24,.94);backdrop-filter:blur(18px);box-shadow:0 12px 36px rgba(0,0,0,.35)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+      <span style="font:600 11px/1.2 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#ddd">DUOTUNE AUDIO</span>
+      <span id="yt-status" style="font:11px system-ui,sans-serif;color:#aaa">Ready when you are</span>
+    </div>
+    <div id="ytplayer" style="width:100%;aspect-ratio:16/9;min-height:180px;background:#09090c;border-radius:10px;overflow:hidden"></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ==========================================================================
+   DUOTUNE · frontend
+   --------------------------------------------------------------------------
+   HOW TO WIRE THE BACKEND
+   1. Set MOCK = false.
+   2. Listen for what the user does:       DuoTune.on('player:play', fn) ...
+   3. Push remote state into the UI:       DuoTune.ui.setPlaying(true) ...
+
+   UI → backend events (payloads)
+     room:connect   {name, code, creating}     invite URL joins existing room
+     room:leave     {}
+     player:play    {seconds}   player:pause {seconds}   player:seek {seconds}
+     player:next    {}          player:prev  {}           player:volume {value 0-100} (local only)
+     queue:play     {index}     queue:add    {videoId?, url?, title?, artist?}
+     search         {query}
+     chat:send      {text, quote|null}      reaction:send {emoji}
+     playlist:add   {owner:'me', url}   saves to personal library, not queue
+     favorite:toggle {liked}
+
+   backend → UI  (DuoTune.ui.*)
+     enterRoom({name, code})      setPresence({me:{name,online}, her:{name,online}})
+     setNowPlaying(song|null)     song = {id,title,artist,img?,dur}
+     setPlaying(bool)             setProgress(pos, dur)
+     setQueue(list, index)        setLyrics(lrcString)
+     receiveMessage({text, quote?})   receiveReaction(emoji)
+     setPlaylists({me:[urls], her:[urls]})   setSearchResults([{videoId,title,artist}])
+   Own chat messages / reactions are shown optimistically by the UI.
+   ========================================================================== */
+const MOCK = false;
+
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ico = (id, cls='') => `<svg class="i ${cls}"><use href="#i-${id}"/></svg>`;
+const fmt = t => { t = Math.max(0, Math.floor(t||0)); return Math.floor(t/60)+':'+String(t%60).padStart(2,'0'); };
+const store = { get:k=>{try{return localStorage.getItem(k)}catch{return null}}, set:(k,v)=>{try{localStorage.setItem(k,v)}catch{}} };
+
+/* ---------- event bridge ---------- */
+const DuoTune = { _h:{}, ui:{},
+  on(n,f){ this._h[n]=f; return this },
+  emit(n,p){ if(MOCK) console.debug('[DuoTune]',n,p); this._h[n]?.(p) } };
+window.DuoTune = DuoTune;
+const act = (type, payload, local) => { DuoTune.emit(type, payload); if (MOCK && local) local(); };
+
+/* ---------- state ---------- */
+const S = { me:{name:'Kiran',online:true}, her:{name:'',online:false}, code:'', playing:false, pos:0, dur:0,
+  song:null, queue:[], index:-1, lrc:[], line:-1, view:'player', avatar:null, herAvatar:null, isHost:false, lastRemoteTrack:null, chatOpen:false, unread:0, quote:null,
+  liked:false, dragging:false, userScrollUntil:0, playlists:{me:[],her:[]}, msgs:[], playlistTracks:{}, searchHistory:[] };
+
+const PALETTES = [
+  {a:'#f9cbd6',b:'#e58aa5',c:'#c8627f',d:'#6e3248',s:'#fff3e8'},
+  {a:'#ffe0cf',b:'#f3a9a9',c:'#d9708a',d:'#5d2c44',s:'#fffaf0'},
+  {a:'#f6d4e6',b:'#cf8fb5',c:'#a8627f',d:'#432438',s:'#fff2f6'}];
+const artHTML = (song, i=0) => song?.img
+  ? `<img alt="" src="${esc(song.img)}">`
+  : (p => `<div class="art-css" style="--a:${p.a};--b:${p.b};--c:${p.c};--d:${p.d};--s:${p.s}"></div>`)(PALETTES[(i<0?0:i)%PALETTES.length]);
+
+/* ==========================================================================
+   MOCK DATA (delete when the backend is connected)
+   ========================================================================== */
+const MOCK_QUEUE = [
+  {id:'demo1',title:'Blush Hour',artist:'Demo Artist',dur:214},
+  {id:'demo2',title:'Slow Letters',artist:'Demo Artist',dur:198},
+  {id:'demo3',title:'Porch Light',artist:'Demo Artist',dur:236}];
+const MOCK_LRC = `[00:10.00]The evening folds itself in pink
+[00:17.00]and every window lights up slow
+[00:25.00]I hear your name inside the song
+[00:33.00]like it was always meant to go
+[00:44.00]So stay a little, stay a while
+[00:52.00]the night has nowhere else to be
+[01:00.00]two hearts, one quiet rhythm
+[01:08.00]keeping time for you and me
+[01:22.00]Hold the chorus, hold my hand
+[01:30.00]we'll learn the words as we go
+[01:38.00]and if we forget the melody
+[01:46.00]we'll hum it low
+[02:00.00]Blush hour, blush hour
+[02:10.00]the sky is soft on us
+[02:20.00]Blush hour, blush hour
+[02:30.00]and nothing else but us`;
+const HER_REPLIES = ['same here ♡','this line 🥹','play it again?','I love this one ✨','come closer ♡'];
+
+/* ==========================================================================
+   NOW PLAYING
+   ========================================================================== */
+const setText = (ids, v) => ids.forEach(id => $('#'+id).textContent = v);
+
+DuoTune.ui.setNowPlaying = song => {
+  S.song = song; S.pos = 0; S.dur = song?.dur || 0; S.line = -1; S.liked = false; S._lyricsDurationChecked=false;
+  if(!MOCK && song) setTimeout(()=>duotuneFetchLyrics(song),120);
+  $('#fav').classList.remove('on'); $('#fav svg').style.setProperty('--hf','none');
+  setText(['title','title2','title3'], song ? song.title : 'Pick your first song');
+  setText(['artist','artist2','artist3'], song ? (song.artist||'') : 'Add one in Library');
+  const i = Math.max(S.index,0), art = song ? artHTML(song,i) : artHTML(null,0);
+  $('#art').innerHTML = art; $('#miniArt').innerHTML = art; $('#miniArt2').innerHTML = art;
+  DuoTune.ui.setLyrics(song && MOCK ? MOCK_LRC : '');
+  renderQueue(); renderProgress();
+};
+DuoTune.ui.setPlaying = on => {
+  S.playing = !!on;
+  $('#v-player').classList.toggle('playing', S.playing);
+  $('#v-library').classList.toggle('playing', S.playing);
+  ['play','play2','play3'].forEach(id => { $('#'+id+' use').setAttribute('href', S.playing ? '#i-pause' : '#i-play'); $('#'+id).setAttribute('aria-label', S.playing?'Pause':'Play'); });
+  renderPresence();
+};
+DuoTune.ui.setProgress = (pos, dur) => { S.pos = pos; if (dur) S.dur = dur; renderProgress(); };
+
+function renderProgress(){
+  const pct = S.dur ? Math.min(100, S.pos / S.dur * 100) : 0;
+  if (!S.dragging){ $('#seek').value = pct * 10; $('#seek').style.setProperty('--p', pct+'%'); }
+  $('#elapsed').textContent = fmt(S.pos);
+  $('#remain').textContent = '-' + fmt(S.dur - S.pos);
+  updateLine();
+}
+
+function jump(delta){
+  if (!S.queue.length) return;
+  const n = S.index + delta; if (n < 0 || n >= S.queue.length) { if (n<0) S.pos=0; return; }
+  S.index = n; DuoTune.ui.setNowPlaying(S.queue[n]); DuoTune.ui.setPlaying(true);
+}
+function seekBy(sec){ const to = Math.min(S.dur||0, Math.max(0, S.pos + sec)); act('player:seek',{seconds:to},()=>{S.pos=to; renderProgress()}); }
+function togglePlay(){ if(!S.song) return; act(S.playing?'player:pause':'player:play',{seconds:S.pos},()=>DuoTune.ui.setPlaying(!S.playing)); }
+
+['play','play2','play3'].forEach(id => $('#'+id).onclick = togglePlay);
+$('#prev').onclick  = () => act('player:prev',{},()=>jump(-1));
+$('#next').onclick  = () => act('player:next',{},()=>jump(1));
+$('#back15').onclick = () => seekBy(-15);
+$('#fwd15').onclick  = () => seekBy(15);
+$('#seek').addEventListener('input', e => { S.dragging = true; const t = e.target.value/1000*S.dur; $('#seek').style.setProperty('--p', e.target.value/10+'%'); $('#elapsed').textContent = fmt(t); $('#remain').textContent='-'+fmt(S.dur-t); });
+$('#seek').addEventListener('change', e => { const t = e.target.value/1000*S.dur; S.dragging = false; act('player:seek',{seconds:t},()=>{S.pos=t; renderProgress()}); });
+$('#vol').addEventListener('input', e => { e.target.style.setProperty('--p', e.target.value+'%'); DuoTune.emit('player:volume',{value:+e.target.value}); });
+$('#vol').style.setProperty('--p','75%');
+$('#fav').onclick = () => { S.liked = !S.liked; $('#fav').classList.toggle('on', S.liked); $('#fav svg').style.setProperty('--hf', S.liked?'var(--rose2)':'none'); DuoTune.emit('favorite:toggle',{liked:S.liked}); };
+
+/* ==========================================================================
+   LYRICS
+   ========================================================================== */
+function parseLrc(raw){
+  const out = [];
+  String(raw||'').split(/\n/).forEach(l => { const m = l.match(/\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\](.*)/); if(m) out.push({t:+m[1]*60 + +m[2] + (+(m[3]||0)/ (m[3]&&m[3].length===3?1000:100)), text:m[4].trim()}); });
+  return out.filter(x=>x.text).sort((a,b)=>a.t-b.t);
+}
+DuoTune.ui.setLyrics = raw => {
+  const source=$('#lyricsSource'); if(source) source.textContent='';
+  S.lrc = parseLrc(raw); S.line = -1; S.quote && clearQuote();
+  const box = $('#lyrics');
+  box.innerHTML = S.lrc.length
+    ? `<div class="pad"></div>${S.lrc.map((l,i)=>`<div class="line" data-i="${i}" style="--d:4">${esc(l.text)}</div>`).join('')}<div class="pad b"></div>`
+    : `<div class="lyr-empty">Lyrics will appear here</div>`;
+  box.scrollTop = 0;
+};
+function updateLine(){
+  if (!S.lrc.length) return;
+  let a = -1; for (let i=0;i<S.lrc.length;i++){ if (S.pos >= S.lrc[i].t) a = i; else break; }
+  if (a === S.line) return;
+  S.line = a;
+  $$('#lyrics .line').forEach((el,i) => { const d = a<0 ? 4 : Math.min(Math.abs(i-a),6); el.style.setProperty('--d', d); el.classList.toggle('active', i===a); });
+  scrollToLine(false);
+}
+function scrollToLine(instant){
+  if (S.view !== 'lyrics' && !instant) return;
+  if (Date.now() < S.userScrollUntil && !instant) return;
+  const box = $('#lyrics'), el = $('#lyrics .line.active') || $('#lyrics .line'); if (!el) return;
+  box.scrollTo({top: el.offsetTop - box.clientHeight*.28, behavior: instant ? 'auto' : 'smooth'});
+}
+['touchstart','wheel'].forEach(ev => $('#lyrics').addEventListener(ev, () => S.userScrollUntil = Date.now()+3500, {passive:true}));
+$('#lyrics').addEventListener('click', e => {
+  const el = e.target.closest('.line'); if (!el) return;
+  $$('#lyrics .line.picked').forEach(x=>x.classList.remove('picked'));
+  el.classList.add('picked'); S.quote = el.textContent;
+  $('#quoteText').textContent = '“'+S.quote+'”'; $('#quote').classList.remove('hidden'); $('#chatInput').focus();
+});
+function clearQuote(){ S.quote = null; $('#quote').classList.add('hidden'); $$('#lyrics .line.picked').forEach(x=>x.classList.remove('picked')); }
+$('#quoteX').onclick = clearQuote;
+
+/* ==========================================================================
+   CHAT + REACTIONS
+   ========================================================================== */
+const msgHTML = m => `<div class="m ${m.by}">${m.quote?`<div class="mq">“${esc(m.quote)}”</div>`:''}<div class="mb">${esc(m.text)}</div></div>`;
+function pushMessage(m){
+  S.msgs.push(m);
+  const list = $('#msgs'); list.insertAdjacentHTML('beforeend', msgHTML(m)); list.scrollTop = list.scrollHeight;
+  if (S.view === 'lyrics' && !S.chatOpen){
+    const f = $('#floats'); f.insertAdjacentHTML('beforeend', msgHTML(m));
+    const node = f.lastElementChild; setTimeout(()=>node.remove(), 6700);
+    while (f.children.length > 3) f.firstElementChild.remove();
+  }
+}
+DuoTune.ui.receiveMessage = m => {
+  pushMessage({by:'her', text:m.text, quote:m.quote||null});
+  if (S.view !== 'lyrics') { showBanner(S.her.name || 'Her', m.text); setUnread(true); }
+  else if (S.chatOpen === false) setUnread(false);
+};
+const setUnread = on => $('#unreadDot').classList.toggle('hidden', !on);
+
+$('#chatInput').addEventListener('input', e => $('#sendBtn').disabled = !e.target.value.trim());
+$('#chatForm').onsubmit = e => {
+  e.preventDefault();
+  const text = $('#chatInput').value.trim(); if (!text) return;
+  const quote = S.quote;
+  DuoTune.emit('chat:send', {text, quote});
+  pushMessage({by:'me', text, quote});
+  $('#chatInput').value = ''; $('#sendBtn').disabled = true; clearQuote();
+  if (MOCK && S.her.online) setTimeout(()=>DuoTune.ui.receiveMessage({text:HER_REPLIES[Math.random()*HER_REPLIES.length|0]}), 2200);
+};
+function setChatOpen(on){
+  S.chatOpen = on; $('#dock').classList.toggle('open', on);
+  if (on) { $('#floats').innerHTML=''; setTimeout(()=>{const l=$('#msgs'); l.scrollTop=l.scrollHeight},60); }
+  setTimeout(()=>scrollToLine(true), 420);
+}
+$('#grab').onclick = () => setChatOpen(!S.chatOpen);
+
+const REACTIONS = ['❤️','🥹','✨','🎶','😭'];
+$('#reacts').innerHTML = REACTIONS.map(r=>`<button type="button" data-r="${r}" aria-label="React ${r}">${r}</button>`).join('');
+$('#reacts').onclick = e => { const b = e.target.closest('button'); if(!b) return; DuoTune.emit('reaction:send',{emoji:b.dataset.r}); floatReaction(b.dataset.r, true); };
+function floatReaction(emoji, mine){
+  const el = document.createElement('div'); el.className = 'rx'; el.textContent = emoji;
+  el.style.left = (mine ? 58 + Math.random()*30 : 8 + Math.random()*30) + '%';
+  el.style.setProperty('--dx', (Math.random()*50-25)+'px');
+  $('#fx').appendChild(el); setTimeout(()=>el.remove(), 2700);
+}
+DuoTune.ui.receiveReaction = emoji => floatReaction(emoji, false);
+
+/* new-message popup */
+let bannerTimer;
+function showBanner(name, text){
+  $('#banAv').textContent = (name[0]||'♡').toUpperCase(); $('#banName').textContent = name; $('#banText').textContent = text;
+  $('#banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(()=>$('#banner').classList.remove('show'), 4200);
+}
+$('#banner').onclick = () => { $('#banner').classList.remove('show'); go('lyrics'); setChatOpen(true); };
+
+/* ==========================================================================
+   LIBRARY: queue, search, playlists
+   ========================================================================== */
+function renderQueue(){
+  const q = $('#queue');
+  q.innerHTML = S.queue.length ? S.queue.map((s,i)=>`
+    <div class="row ${i===S.index?'cur':''}" data-i="${i}">
+      <button type="button" class="q-play" data-play="${i}" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-align:left">
+        <span class="q-art">${artHTML(s,i)}</span>
+        <span class="t"><div class="n">${esc(s.title)}</div><div class="s">${esc(s.artist||'')}</div></span>
+        ${i===S.index?'<span class="bars"><i></i><i></i><i></i></span>':''}
+      </button>
+      <button type="button" class="q-remove" data-remove="${i}" aria-label="Remove ${esc(s.title)}">×</button>
+    </div>`).join('') : `<div class="empty">Nothing queued yet</div>`;
+}
+DuoTune.ui.setQueue = (list, index=-1) => { S.queue = list||[]; S.index = index; renderQueue(); };
+$('#queue').onclick = e => {
+  const remove=e.target.closest('[data-remove]');
+  if(remove){const i=+remove.dataset.remove;act('queue:remove',{index:i});return;}
+  const play=e.target.closest('[data-play]');if(!play)return;const i=+play.dataset.play;
+  act('queue:play',{index:i},()=>{S.index=i;DuoTune.ui.setNowPlaying(S.queue[i]);DuoTune.ui.setPlaying(true);});
+};
+$('#clearQueueBtn').onclick=()=>{if(!S.queue.length)return; if(confirm('Clear the shared queue for both of you?'))DuoTune.emit('queue:clear',{});};
+
+function parseVideoId(raw){
+  try{ const u = new URL(raw); if(u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+    if(u.searchParams.get('v')) return u.searchParams.get('v');
+    if(u.pathname.includes('/shorts/')) return u.pathname.split('/shorts/')[1].split('/')[0]; return null;
+  }catch{ return /^[\w-]{11}$/.test(raw) ? raw : null; }
+}
+function addToQueue(s){ S.queue.push(s); renderQueue(); if (S.index < 0){ S.index = 0; DuoTune.ui.setNowPlaying(S.queue[0]); } toast('Added to queue'); }
+$('#addForm').onsubmit = e => {
+  e.preventDefault(); const v = $('#addInput').value.trim(); if(!v) return;
+  const id = /^(https?:)?\/\//.test(v) ? parseVideoId(v) : null;
+  if (id){ act('queue:add',{videoId:id,url:v},()=>addToQueue({id,title:'Added song',artist:'YouTube',dur:200})); $('#addInput').value=''; $('#results').innerHTML=''; }
+  else { act('search',{query:v},()=>DuoTune.ui.setSearchResults([1,2,3].map(n=>({videoId:'mock'+n,title:`${v} · version ${n}`,artist:'Demo Artist'})))); }
+};
+DuoTune.ui.setSearchResults = list => {
+  $('#results').innerHTML = (list&&list.length) ? list.map((r,i)=>`
+    <button class="row" data-i="${i}"><span class="q-art">${artHTML(r,i+1)}</span>
+    <span class="t"><div class="n">${esc(r.title)}</div><div class="s">${esc(r.artist||'')}</div></span>
+    <span class="add-btn" style="height:34px;line-height:34px;padding:0 14px">Add</span></button>`).join('') : '<div class="empty">No results</div>';
+  $('#results')._list = list;
+};
+$('#results').onclick = e => { const r = e.target.closest('.row'); if(!r) return; const s = $('#results')._list[+r.dataset.i];
+  act('queue:add',{videoId:s.videoId,title:s.title,artist:s.artist},()=>addToQueue({id:s.videoId,title:s.title,artist:s.artist,dur:210})); $('#results').innerHTML=''; $('#addInput').value=''; };
+
+$('#seg').onclick = e => { const b = e.target.closest('button'); if(!b) return;
+  $$('#seg button').forEach(x=>x.classList.toggle('on',x===b));
+  ['paneQueue','panePl'].forEach(id=>$('#'+id).classList.toggle('hidden', id!==b.dataset.pane)); };
+$('#minibar').addEventListener('click', e => { if(!e.target.closest('.pp')) go('player'); });
+
+function renderPlaylists(){
+  [['me','#plMe'],['her','#plHer']].forEach(([owner,sel])=>{
+    const items=S.playlists[owner]||[];
+    $(sel).innerHTML=items.length?items.map((item,i)=>{
+      const p=typeof item==='string'?{url:item,title:'Playlist',added_at:null,tracks:[]}:item;
+      let host='Playlist';try{host=new URL(p.url).hostname.replace(/^www\./,'').replace(/^open\./,'');}catch{}
+      const when=p.added_at?new Date(p.added_at).toLocaleString():'';
+      return `<div class="row" style="align-items:center"><button type="button" class="pl-open" data-owner="${owner}" data-index="${i}" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;text-align:left"><span class="pl-ico">${ico('note')}</span><span class="t"><div class="n">${esc(p.title||host)}</div><div class="s">${esc(host)} · ${esc(p.owner_name||(owner==='me'?S.me.name:S.her.name||'Her'))}</div><div class="pl-meta">Added ${esc(when||'in this room')} · ${(p.tracks||[]).length} tracks</div></span></button><button type="button" class="q-remove pl-remove" data-owner="${owner}" data-index="${i}" aria-label="Remove playlist">×</button></div>`;
+    }).join(''):'<div class="empty" style="padding:14px 0">No playlist yet</div>';
+  });
+}
+DuoTune.ui.setPlaylists=p=>{S.playlists={me:p.me||[],her:p.her||[]};renderPlaylists();};
+$$('#panePl form').forEach(f=>f.onsubmit=async e=>{
+  e.preventDefault();const inp=f.querySelector('input'),url=inp.value.trim();if(!url)return;
+  let ok=false;try{const u=new URL(url);ok=(u.hostname.endsWith('spotify.com')&&u.pathname.includes('/playlist/'))||(u.hostname.includes('youtube.com')&&u.searchParams.has('list'))||(u.hostname==='youtu.be'&&u.searchParams.has('list'));}catch{}
+  if(!ok){inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');toast('Paste a Spotify or YouTube playlist link');return;}
+  const owner=f.dataset.owner;DuoTune.emit('playlist:add',{owner,url});inp.value='';
+});
+$('#panePl').onclick=async e=>{
+  const rm=e.target.closest('.pl-remove');if(rm){DuoTune.emit('playlist:remove',{owner:rm.dataset.owner,index:+rm.dataset.index});return;}
+  const open=e.target.closest('.pl-open');if(open){const list=S.playlists[open.dataset.owner]||[],pl=list[+open.dataset.index];if(!pl)return;const tracks=pl.tracks||[];if(!tracks.length){toast('Playlist tracks are not loaded yet');return;}if(!confirm(`Add ${tracks.length} tracks from this playlist to the shared queue?`))return;DuoTune.emit('playlist:queue',{tracks});}
+};
+
+/* ==========================================================================
+   NAVIGATION, PRESENCE, ROOM
+   ========================================================================== */
+function go(v){
+  S.view = v;
+  $$('.view').forEach(x=>x.classList.toggle('active', x.id==='v-'+v));
+  $$('.tab').forEach(x=>x.classList.toggle('active', x.dataset.v===v));
+  if (v==='lyrics'){ setUnread(false); setTimeout(()=>scrollToLine(true), 60); }
+}
+$$('.tab').forEach(t => t.onclick = () => go(t.dataset.v));
+
+DuoTune.ui.setPresence = p => {
+  if (p.me){ S.me.name = p.me.name || S.me.name; S.me.online = p.me.online !== false; }
+  if (p.her){ S.her.name = p.her.name || ''; S.her.online = !!p.her.online; if(Object.prototype.hasOwnProperty.call(p.her,'avatar')) S.herAvatar=p.her.avatar||null; }
+  renderPresence();
+};
+function renderPresence(){
+  const init = n => (n && n[0] || '').toUpperCase();
+  const paintAvatar=(el,url,fallback)=>{
+    el.textContent=url?'':fallback;
+    el.style.backgroundImage=url?`url("${url}")`:'';
+    el.style.backgroundSize='cover'; el.style.backgroundPosition='center';
+  };
+  paintAvatar($('#avMe'),S.avatar,init(S.me.name)||'Y');
+  paintAvatar($('#avHer'),S.herAvatar,init(S.her.name)||'♡');
+  $('#avHer').classList.toggle('on', S.her.online);
+  $('#pill').classList.toggle('together', S.her.online);
+  $('#pill').classList.toggle('playing', S.her.online && S.playing);
+  $('#shMeAv').textContent = $('#avMe').textContent; $('#shMeName').textContent = S.me.name;
+  $('#shHerAv').textContent = $('#avHer').textContent; $('#shHerAv').classList.toggle('on', S.her.online);
+  $('#shHerName').textContent = S.her.name || 'Waiting for her';
+  $('#shHerState').textContent = S.her.online ? 'Here with you' : 'Not here yet';
+  $('#lblMine').textContent = (S.me.name || 'Your') + (S.me.name ? '’s Playlist' : ' Playlist'); $('#lblHer').textContent = S.her.name ? S.her.name + '’s Playlist' : 'Waiting for member’s Playlist';
+}
+
+const sheet = on => { $('#sheet').classList.toggle('show', on); $('#sheetBg').classList.toggle('show', on); };
+$('#pill').onclick = () => sheet(true);
+$('#sheetBg').onclick = () => sheet(false);
+$('#copyCode').onclick = async () => { const link=location.origin+location.pathname+'?room='+encodeURIComponent(S.code||INVITE_ROOM_TOKEN); try{await navigator.clipboard.writeText(link);toast('Invite link copied');}catch{prompt('Copy your invite link',link);} };
+$('#leaveBtn').onclick = () => { sheet(false); act('room:leave',{},leaveRoom); };
+$('#reviewRequestsBtn').onclick=async()=>{
+  if(!duotuneSupabase||!S.code)return;
+  const {data,error}=await duotuneSupabase.rpc('duotune_list_join_requests',{p_room_code:S.code});
+  if(error){toast(error.message);return;}
+  const pending=data||[];if(!pending.length){toast('No pending requests');return;}
+  for(const req of pending){
+    const approve=confirm(`Access request from ${req.display_name}.\nApprove this member?`);
+    const result=await duotuneSupabase.rpc('duotune_review_join_request',{p_request_id:req.id,p_approve:approve});
+    if(result.error)toast(result.error.message);
+  }
+  toast('Access requests reviewed');
+};
+
+let toastTimer;
+function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove('show'), 2200); }
+
+DuoTune.ui.enterRoom = ({name, code}) => {
+  S.me.name = name; S.code = code;
+  $('#shCode').textContent = code; $('#footCode').textContent = 'ROOM · ' + code;
+  $('#welcome').classList.add('leave'); setTimeout(()=>$('#welcome').classList.add('hidden'), 450);
+  $('#room').classList.remove('hidden'); requestAnimationFrame(()=>requestAnimationFrame(()=>$('#room').classList.add('in')));
+  go('player'); renderPresence(); renderPlaylists(); renderQueue();
+  if (MOCK) runMock();
+};
+function leaveRoom(){
+  clearInterval(tick); DuoTune.ui.setPlaying(false); S.msgs=[]; $('#msgs').innerHTML=''; $('#floats').innerHTML='';
+  S.queue=[]; S.index=-1; S.her={name:'',online:false}; DuoTune.ui.setNowPlaying(null); renderQueue();
+  $('#room').classList.remove('in'); setTimeout(()=>$('#room').classList.add('hidden'), 500);
+  $('#welcome').classList.remove('hidden'); requestAnimationFrame(()=>$('#welcome').classList.remove('leave'));
+}
+
+/* ---------- welcome ---------- */
+const nameInput=$('#nameInput');
+nameInput.value=store.get('duotune_name')||'Kiran';
+const syncHello=()=>{$('#helloName').textContent=nameInput.value.trim()||'there';};
+nameInput.addEventListener('input',syncHello);
+const inviteRoom=new URLSearchParams(location.search).get('room');
+const INVITE_ROOM_TOKEN='KIRANUU'; // Fixed private DUOTUNE room code.
+$('#roomCodeInput').value=inviteRoom?duotuneRoomCode(inviteRoom):INVITE_ROOM_TOKEN;
+syncHello();
+const avatarInput=$('#avatarInput');
+const savedAvatar=store.get('duotune_avatar_self');
+if(savedAvatar){S.avatar=savedAvatar;$('#avatarPreview').innerHTML=`<img src="${savedAvatar}" style="width:100%;height:100%;object-fit:cover">`;$('#avatarPickText').textContent='Change profile picture';}
+avatarInput.addEventListener('change',()=>{
+  const file=avatarInput.files?.[0];if(!file)return;
+  if(file.size>4*1024*1024){toast('Choose a picture under 4 MB');avatarInput.value='';return;}
+  const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const canvas=document.createElement('canvas'),max=256,scale=Math.min(1,max/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);S.avatar=canvas.toDataURL('image/jpeg',.78);store.set('duotune_avatar_self',S.avatar);$('#avatarPreview').innerHTML=`<img src="${S.avatar}" style="width:100%;height:100%;object-fit:cover">`;$('#avatarPickText').textContent='Change profile picture';};img.src=reader.result;};reader.readAsDataURL(file);
+});
+$('#welcomeForm').onsubmit=e=>{
+  e.preventDefault();const name=nameInput.value.trim(),code=duotuneRoomCode($('#roomCodeInput').value),password=$('#roomPasswordInput').value;
+  if(!name){toast('Enter your name first');nameInput.focus();return;}
+  if(!code){toast('Enter the room code');return;}
+  if(!password){toast('Enter the room password');$('#roomPasswordInput').focus();return;}
+  if(S.avatar)store.set('duotune_avatar_self',S.avatar);store.set('duotune_name',name);
+  DuoTune.emit('room:connect',{name,code,password});
+};
+
+/* ==========================================================================
+   SUPABASE REALTIME ADAPTER · DUOTUNE
+   UI/CSS intentionally unchanged.
+   This uses Realtime Presence + Broadcast. Persistent history/authentication
+   and strict two-member enforcement are a separate production-hardening step.
+   ========================================================================== */
+const DUOTUNE_SUPABASE_URL = 'https://daqmareanfmfbqqqtbft.supabase.co';
+const DUOTUNE_SUPABASE_KEY = 'sb_publishable_-sFmi0TkGbAwSmzLbXF4GA_t7-iCurd';
+
+let duotuneSupabase = null;
+let duotuneChannel = null;
+let duotunePresenceKey = null;
+let duotuneJoining = false;
+
+function duotuneRoomCode(raw){
+  return String(raw || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-').replace(/^-|-$/g,'');
+}
+function duotuneNewRoomCode(){
+  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes=crypto.getRandomValues(new Uint8Array(6));
+  return 'DUO-'+Array.from(bytes,b=>alphabet[b%alphabet.length]).join('');
+}
+async function duotuneBroadcast(payload){
+  if(!duotuneChannel) return;
+  const result=await duotuneChannel.send({type:'broadcast',event:'duotune',payload});
+  if(result!=='ok') console.warn('[DUOTUNE] Broadcast status:',result);
+}
+function duotunePresence(){
+  if(!duotuneChannel) return;
+  const state=duotuneChannel.presenceState();
+  const members=Object.entries(state||{}).flatMap(([key,items])=>(items||[]).map(m=>({...m,__presenceKey:key})));
+  const me=members.find(m=>m.__presenceKey===duotunePresenceKey);
+  const peer=members.find(m=>m.__presenceKey!==duotunePresenceKey);
+  S.herAvatar=peer?.avatar||null;
+  DuoTune.ui.setPresence({me:{name:me?.name||S.me.name,online:true},her:{name:peer?.name||'',online:!!peer,avatar:peer?.avatar||null}});
+}
+function duotuneReceive(payload){
+  if(!payload || typeof payload!=='object') return;
+  switch(payload.kind){
+    case 'chat':
+      if(payload.sender!==duotunePresenceKey) DuoTune.ui.receiveMessage({text:payload.text,quote:payload.quote||null});
+      break;
+    case 'reaction':
+      DuoTune.ui.receiveReaction(payload.emoji);
+      break;
+    case 'queue':
+      if(Array.isArray(payload.queue)){
+        DuoTune.ui.setQueue(payload.queue,Number.isInteger(payload.index)?payload.index:S.index);
+        if(payload.index>=0 && payload.queue[payload.index]){
+          DuoTune.ui.setNowPlaying(payload.queue[payload.index]);
+          DuoTune.ui.setPlaying(!!payload.playing);
+          S.queue=payload.queue; S.index=payload.index; S.playing=!!payload.playing;
+          ytLoadCurrent(false);
+          if(payload.playing && ytReady) ytStatus('Track synced · press Play if autoplay is blocked');
+        }
+      }
+      break;
+    case 'sync': duotuneApplySync(payload); break;
+    case 'player':
+      if(payload.action==='play'){ DuoTune.ui.setPlaying(true); ytRemote(()=>{ytPlayer.seekTo(Number(payload.seconds)||0,true);ytPlayer.playVideo();}); }
+      if(payload.action==='pause'){ DuoTune.ui.setPlaying(false); ytRemote(()=>ytPlayer.pauseVideo()); }
+      if(payload.action==='seek'){ DuoTune.ui.setProgress(Number(payload.seconds)||0,S.dur); ytRemote(()=>ytPlayer.seekTo(Number(payload.seconds)||0,true)); }
+      if(payload.action==='volume' && Number.isFinite(payload.value)) {
+        $('#vol').value=payload.value;
+        $('#vol').style.setProperty('--p',payload.value+'%');
+      }
+      break;
+    case 'playlist-refresh': duotuneLoadPlaylists(); break;
+    case 'profile': if(payload.sender!==duotunePresenceKey){S.herAvatar=payload.avatar||null;if(payload.name)S.her.name=payload.name;renderPresence();} break;
+    case 'presence-ping':
+      duotunePresence();
+      break;
+  }
+}
+async function duotuneConnect({name,code,password}){
+  if(duotuneJoining) return;
+  duotuneJoining=true;
+  try{
+    if(!window.supabase?.createClient) throw new Error('Supabase library did not load. Refresh the page and try again.');
+    if(duotuneChannel){
+      try{await duotuneChannel.untrack(); await duotuneSupabase.removeChannel(duotuneChannel);}catch{}
+      duotuneChannel=null;
+    }
+    duotuneSupabase=window.supabase.createClient(DUOTUNE_SUPABASE_URL,DUOTUNE_SUPABASE_KEY,{
+      realtime:{params:{eventsPerSecond:10}}
+    });
+    let {data:authData,error:authError}=await duotuneSupabase.auth.getSession();
+    if(authError) throw authError;
+    if(!authData.session){
+      const signed=await duotuneSupabase.auth.signInAnonymously();
+      if(signed.error) throw new Error('Anonymous sign-in failed. Check that Anonymous Sign-ins are enabled in Supabase Auth.');
+      authData=signed.data;
+    }
+    S.authUserId=authData.session?.user?.id||null;
+    if(!S.authUserId) throw new Error('Could not establish your private device identity.');
+    S.isHost=false;
+    const roomCode=code ? duotuneRoomCode(code) : INVITE_ROOM_TOKEN;
+    if(roomCode!==INVITE_ROOM_TOKEN) throw new Error('DUOTUNE room code is fixed. Use KIRANUU.');
+    if(!password || password.length<6) throw new Error('Room password must be at least 6 characters.');
+    let access=await duotuneSupabase.rpc('duotune_request_room_access',{p_room_code:roomCode,p_display_name:name,p_password:password});
+    if(access.error) throw new Error(access.error.message);
+    if(access.data?.status==='setup_required'){
+      const setup=await duotuneSupabase.rpc('duotune_set_room_password',{p_room_code:roomCode,p_password:password});
+      if(setup.error) throw new Error('Only the existing room admin can set the shared password. '+setup.error.message);
+      access=await duotuneSupabase.rpc('duotune_request_room_access',{p_room_code:roomCode,p_display_name:name,p_password:password});
+      if(access.error) throw new Error(access.error.message);
+    }
+    if(access.data?.status==='pending') throw new Error('Access request sent. The room admin must approve you first.');
+    if(access.data?.status!=='approved') throw new Error(access.data?.message||'Room access was not approved.');
+    S.isHost=!!access.data?.is_admin;
+    S.code=roomCode;
+    S.roomId=access.data?.room_id||null;
+    duotunePresenceKey=(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    duotuneChannel=duotuneSupabase.channel(`duotune:${roomCode}`,{
+      config:{presence:{key:duotunePresenceKey},broadcast:{self:false}}
+    });
+    duotuneChannel
+      .on('broadcast',{event:'duotune'},({payload})=>duotuneReceive(payload))
+      .on('presence',{event:'sync'},duotunePresence)
+      .on('presence',{event:'join'},duotunePresence)
+      .on('presence',{event:'leave'},duotunePresence);
+
+    const status=await new Promise((resolve,reject)=>{
+      const timeout=setTimeout(()=>reject(new Error('Supabase connection timed out. Check the project Realtime settings and internet connection.')),12000);
+      duotuneChannel.subscribe(async state=>{
+        if(state==='SUBSCRIBED'){
+          clearTimeout(timeout);
+          try{
+            const tracked=await duotuneChannel.track({name,avatar:S.avatar||null,joined_at:new Date().toISOString()});
+            if(tracked!=='ok') throw new Error('Presence tracking failed: '+tracked);
+            resolve(state);
+          }catch(e){reject(e);}
+        }else if(state==='CHANNEL_ERROR'||state==='TIMED_OUT'||state==='CLOSED'){
+          clearTimeout(timeout);
+          reject(new Error('Supabase channel status: '+state));
+        }
+      });
+    });
+    if(status!=='SUBSCRIBED') throw new Error('Could not subscribe to room.');
+    DuoTune.ui.enterRoom({name,code:roomCode});
+    ytInitPlayer();
+    duotunePresence();
+    await duotuneRestoreQueue(); await duotuneLoadChat(); await duotuneLoadHistory(); await duotuneLoadPlaylists();
+    await duotuneBroadcast({kind:'profile',name:S.me.name,avatar:S.avatar||null});
+    if(S.authUserId){
+      const {error:profileError}=await duotuneSupabase.from('duotune_profiles').upsert({user_id:S.authUserId,room_code:S.code,display_name:S.me.name,updated_at:new Date().toISOString()});
+      if(profileError) console.warn('[DUOTUNE] Profile record save failed:',profileError.message);
+    }
+    await duotuneBroadcast({kind:'presence-ping'});
+    toast(S.isHost?'Welcome back, room admin!':'Welcome to DUOTUNE!');
+    console.info('[DUOTUNE] Connected to',roomCode);
+  }catch(error){
+    console.error('[DUOTUNE] Connect error:',error);
+    toast(error.message||'Could not connect to Supabase');
+    alert(error.message||'Could not connect to Supabase');
+  }finally{
+    duotuneJoining=false;
+  }
+}
+
+/* ---------- actual YouTube playback ---------- */
+let ytPlayer = null, ytReady = false, ytProgressTimer = null, ytRemoteAction = false;
+const ytStatus = (message) => { const el=$('#yt-status'); if(el) el.textContent=message; };
+function ytVideoId(song){
+  if(!song) return null;
+  const direct=String(song.videoId||'').trim();
+  if(/^[A-Za-z0-9_-]{11}$/.test(direct)) return direct;
+  const raw=String(song.url||song.id||'').trim();
+  if(/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
+  try{
+    const u=new URL(raw);
+    const host=u.hostname.replace(/^www\./,'').replace(/^m\./,'');
+    let id='';
+    if(host==='youtu.be') id=u.pathname.split('/').filter(Boolean)[0]||'';
+    else if(host.endsWith('youtube.com') || host==='youtube-nocookie.com'){
+      id=u.searchParams.get('v')||'';
+      if(!id){const parts=u.pathname.split('/').filter(Boolean);const marker=parts.findIndex(x=>['embed','shorts','live'].includes(x));if(marker>=0)id=parts[marker+1]||'';}
+    }
+    return /^[A-Za-z0-9_-]{11}$/.test(id)?id:null;
+  }catch{return null;}
+}
+function ytLoadCurrent(autoplay=true){
+  const song=S.queue[S.index], id=ytVideoId(song);
+  if(!song || !id){ ytStatus('No valid YouTube video ID in queue item'); console.warn('[DUOTUNE] Queue item has no YouTube video ID:',song); return; }
+  if(!ytReady){ ytStatus('Preparing player…'); return; }
+  ytStatus('Loading track…');
+  try{
+    if(typeof ytPlayer.loadVideoById!=='function'){ ytStatus('Player is still initializing…'); return; }
+    ytPlayer.loadVideoById({videoId:id});
+    if(!autoplay) ytPlayer.pauseVideo();
+    console.info('[DUOTUNE] Loading YouTube video:',id);
+    setTimeout(()=>{
+      if(!ytReady || !ytPlayer) return;
+      const duration=Number(ytPlayer.getDuration())||0;
+      const state=ytPlayer.getPlayerState();
+      if(duration>0){
+        S.dur=duration; DuoTune.ui.setProgress(ytPlayer.getCurrentTime()||0,duration);
+      }else if(state!==YT.PlayerState.PLAYING && state!==YT.PlayerState.BUFFERING){
+        ytStatus('Waiting for playback · press Play in player');
+      }
+    },2500);
+  }catch(e){ console.warn('[DUOTUNE] YouTube load failed',e); ytStatus('Could not load this track'); }
+}
+let ytApiReady = false, ytInitStarted = false;
+function ytInitPlayer(){
+  if(!S.code) return;
+  const deck=$('#duotune-audio-deck');
+  if(deck) deck.style.display='block';
+  if(!ytApiReady || ytInitStarted || !window.YT || !YT.Player) return;
+  ytInitStarted=true;
+  ytStatus('Creating player…');
+  ytPlayer = new YT.Player('ytplayer',{
+    width:'100%',height:'100%',
+    playerVars:{playsinline:1,rel:0,iv_load_policy:3,origin:location.origin},
+    events:{
+      onReady:()=>{
+        ytReady=true; ytStatus('Player ready · add a track');duotuneStartSyncHeartbeat();
+        console.info('[DUOTUNE] YouTube player ready');
+        if(S.index>=0) ytLoadCurrent(false);
+        clearInterval(ytProgressTimer);
+        ytProgressTimer=setInterval(()=>{
+          if(!ytReady || !ytPlayer || typeof ytPlayer.getCurrentTime!=='function') return;
+          const duration=Number(ytPlayer.getDuration())||0, position=Number(ytPlayer.getCurrentTime())||0;
+          if(duration>0){S.dur=duration;S.pos=position;DuoTune.ui.setProgress(position,duration);
+            if(S.song && !S._lyricsDurationChecked){S._lyricsDurationChecked=true;S.song.dur=duration;duotuneFetchLyrics(S.song);}
+          }
+        },1000);
+      },
+      onStateChange:(event)=>{
+        if(event.data===YT.PlayerState.PLAYING){
+          const duration=Number(ytPlayer.getDuration())||0;
+          if(duration>0){S.dur=duration;DuoTune.ui.setProgress(ytPlayer.getCurrentTime(),duration);}
+          S.playing=true; DuoTune.ui.setPlaying(true); ytStatus('Playing');
+          if(!ytRemoteAction) duotuneBroadcast({kind:'player',action:'play',seconds:ytPlayer.getCurrentTime()});
+          if(S.queue[S.index]) duotuneSaveHistory(S.queue[S.index]);
+        }else if(event.data===YT.PlayerState.PAUSED){
+          S.playing=false; DuoTune.ui.setPlaying(false); ytStatus('Paused');
+          if(!ytRemoteAction) duotuneBroadcast({kind:'player',action:'pause',seconds:ytPlayer.getCurrentTime()});
+        }else if(event.data===YT.PlayerState.ENDED){
+          ytStatus('Track ended');
+          if(!ytRemoteAction) DuoTune.emit('player:next',{});
+        }else if(event.data===YT.PlayerState.BUFFERING){ytStatus('Buffering…');}
+      },
+      onError:(event)=>{
+        const messages={2:'Invalid video ID',5:'HTML5 playback error',100:'Video not found or private',101:'Embedding disabled by owner',150:'Embedding disabled by owner',153:'Player identity/referrer error'};
+        const reason=messages[event.data]||('YouTube error '+event.data);
+        ytStatus(reason); console.error('[DUOTUNE] YouTube player error:',event.data,reason);
+        toast(reason+'. Try another track.');
+      },
+      onAutoplayBlocked:()=>{
+        ytStatus('Autoplay blocked · press Play');
+        toast('Browser blocked autoplay. Tap Play in the player once.');
+      }
+    }
+  });
+}
+window.onYouTubeIframeAPIReady = function(){
+  ytApiReady=true;
+  if(S.code) ytInitPlayer();
+};
+
+let syncHeartbeat=null;
+function duotuneStartSyncHeartbeat(){
+  clearInterval(syncHeartbeat);
+  syncHeartbeat=setInterval(()=>{
+    if(!S.isHost||!duotuneChannel||!ytReady||!ytPlayer||S.index<0)return;
+    const videoId=ytVideoId(S.queue[S.index]);if(!videoId)return;
+    duotuneBroadcast({kind:'sync',videoId,seconds:Number(ytPlayer.getCurrentTime())||0,playing:ytPlayer.getPlayerState()===YT.PlayerState.PLAYING,index:S.index,queue:S.queue});
+  },1500);
+}
+function duotuneApplySync(p){
+  if(S.isHost||!ytReady||!ytPlayer)return;
+  if(Array.isArray(p.queue)){S.queue=p.queue;S.index=p.index;DuoTune.ui.setQueue(S.queue,S.index);}
+  const song=S.queue[S.index],id=ytVideoId(song);
+  if(id!==p.videoId){
+    if(song){song.videoId=p.videoId;song.id=p.videoId;}
+    ytRemote(()=>ytPlayer.loadVideoById({videoId:p.videoId,startSeconds:Math.max(0,p.seconds||0)}));return;
+  }
+  const local=Number(ytPlayer.getCurrentTime())||0,remote=Number(p.seconds)||0;
+  if(Math.abs(local-remote)>1.25)ytRemote(()=>ytPlayer.seekTo(remote,true));
+  const playing=ytPlayer.getPlayerState()===YT.PlayerState.PLAYING;
+  if(p.playing&&!playing)ytRemote(()=>ytPlayer.playVideo());
+  if(!p.playing&&playing)ytRemote(()=>ytPlayer.pauseVideo());
+}
+
+function ytRemote(fn){
+  if(!ytReady || !ytPlayer) return;
+  ytRemoteAction=true;
+  try{fn();}finally{setTimeout(()=>{ytRemoteAction=false;},900);}
+}
+async function duotuneSaveHistory(song){
+  if(!duotuneSupabase || !S.code || !song) return;
+  try{
+    await duotuneSupabase.from('duotune_history').insert({
+      room_code:S.code, user_id:S.authUserId, track_id:String(song.videoId||song.id||''), title:song.title||'Unknown',
+      artist:song.artist||'', artwork_url:song.img||null, played_by:S.me.name
+    });
+  }catch(e){console.warn('[DUOTUNE] History save unavailable. Run the setup SQL.',e);}
+}
+async function duotuneLoadHistory(){
+  if(!duotuneSupabase || !S.code) return;
+  try{
+    const {data,error}=await duotuneSupabase.from('duotune_history').select('*').eq('room_code',S.code).order('played_at',{ascending:false}).limit(50);
+    if(error) throw error;
+    window.DUOTUNE_HISTORY=data||[];
+  }catch(e){console.warn('[DUOTUNE] History table not ready. Run the setup SQL.',e);}
+}
+
+async function duotunePersistQueue(){
+  if(!duotuneSupabase||!S.code||!S.authUserId)return;
+  const {error}=await duotuneSupabase.from('duotune_queue_state').upsert({
+    room_code:S.code,user_id:S.authUserId,queue:S.queue,index_value:S.index,updated_at:new Date().toISOString()
+  },{onConflict:'room_code'});
+  if(error)console.warn('[DUOTUNE] Queue persistence failed:',error.message);
+}
+async function duotuneRestoreQueue(){
+  if(!duotuneSupabase||!S.code)return;
+  const {data,error}=await duotuneSupabase.from('duotune_queue_state').select('queue,index_value').eq('room_code',S.code).maybeSingle();
+  if(error){console.warn('[DUOTUNE] Queue restore failed:',error.message);return;}
+  if(data&&Array.isArray(data.queue)&&S.queue.length===0){
+    S.queue=data.queue;S.index=Number.isInteger(data.index_value)?data.index_value:-1;
+    DuoTune.ui.setQueue(S.queue,S.index);
+    if(S.index>=0)DuoTune.ui.setNowPlaying(S.queue[S.index]);
+  }
+}
+
+async function duotuneLoadChat(){
+  if(!duotuneSupabase || !S.code) return;
+  try{
+    const {data,error}=await duotuneSupabase.from('duotune_chat').select('*').eq('room_code',S.code).order('created_at',{ascending:true}).limit(200);
+    if(error) throw error;
+    (data||[]).forEach(row=>DuoTune.ui.receiveMessage({text:row.message,quote:row.quote||null,by:row.sender_name}));
+  }catch(e){console.warn('[DUOTUNE] Chat persistence unavailable. Run the setup SQL.',e);}
+}
+
+let lyricsRequestToken=0;
+async function duotuneFetchLyrics(song){
+  const token=++lyricsRequestToken;DuoTune.ui.setLyrics('');
+  const source=$('#lyricsSource');if(source)source.textContent='Finding synchronized lyrics…';
+  if(!song?.title||!song?.artist){if(source)source.textContent='Lyrics unavailable';return;}
+  const params=new URLSearchParams({track_name:song.title,artist_name:song.artist});
+  if(song.dur>0)params.set('duration',String(Math.round(song.dur)));
+  try{
+    let res=await fetch('https://lrclib.net/api/get?'+params.toString(),{headers:{'X-User-Agent':'DUOTUNE/1.0 (private two-person music room)'}}),record=res.ok?await res.json():null;
+    if(!record){
+      const sr=await fetch('https://lrclib.net/api/search?'+new URLSearchParams({track_name:song.title,artist_name:song.artist}));
+      if(sr.ok){const list=await sr.json();record=(list||[]).find(x=>x.syncedLyrics&&x.artistName?.toLowerCase()===song.artist.toLowerCase())||(list||[]).find(x=>x.syncedLyrics);}
+    }
+    if(token!==lyricsRequestToken)return;
+    if(record?.syncedLyrics){DuoTune.ui.setLyrics(record.syncedLyrics);if(source)source.textContent='Synchronized lyrics · LRCLIB';}
+    else if(record?.plainLyrics){const box=$('#lyrics');box.innerHTML=`<div class="pad"></div><div style="white-space:pre-wrap;text-align:center;padding:18px 8px;line-height:2;color:var(--ink)">${esc(record.plainLyrics)}</div>`;if(source)source.textContent='Lyrics found, but timestamps are unavailable for this version';}
+    else if(source)source.textContent='No lyrics found for this track';
+  }catch(e){console.warn('[DUOTUNE] Lyrics lookup failed',e);if(token===lyricsRequestToken&&source)source.textContent='Could not load lyrics right now';}
+}
+
+
+async function duotuneYoutubeRequest(payload){
+  if(!duotuneSupabase)throw new Error('Connect to your DUOTUNE room first.');
+  const {data,error}=await duotuneSupabase.functions.invoke('duotune-youtube',{body:payload});
+  if(error)throw new Error('YouTube service is not configured yet. Deploy the DUOTUNE YouTube Edge Function first.');
+  if(data?.error)throw new Error(data.error);
+  return data;
+}
+async function duotuneImportYouTubePlaylist(url){
+  const u=new URL(url),listId=u.searchParams.get('list');if(!listId)throw new Error('Could not find a playlist ID.');
+  const data=await duotuneYoutubeRequest({action:'playlist',playlistId:listId});
+  const tracks=(data.items||[]).map(x=>{const id=x.contentDetails?.videoId||x.snippet?.resourceId?.videoId;if(!id)return null;return{id,videoId:id,url:'https://www.youtube.com/watch?v='+id,title:x.snippet?.title||'YouTube track',artist:x.snippet?.videoOwnerChannelTitle||x.snippet?.channelTitle||'',img:x.snippet?.thumbnails?.medium?.url||null,dur:0,source:'YouTube'};}).filter(Boolean);
+  if(!tracks.length)throw new Error('No accessible videos in this playlist.');
+  return {title:data.playlistTitle||'YouTube playlist',url,source:'YouTube',tracks};
+}
+function spotifyPlaylistId(url){const u=new URL(url),m=u.pathname.match(/\/playlist\/([A-Za-z0-9]+)/);return m?.[1]||null;}
+async function duotuneImportSpotifyPlaylist(url){
+  const id=spotifyPlaylistId(url);if(!id)throw new Error('Invalid Spotify playlist URL.');
+  throw new Error('Spotify playlist links need Spotify-authorized tracklist access. To avoid Developer App setup, export the playlist tracklist as CSV and import that file instead. A Spotify URL alone does not expose its full tracklist.');
+}
+function duotuneParseCSV(text){
+  const rows=[];let row=[],cell='',quoted=false;
+  for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}else if(c===','&&!quoted){row.push(cell);cell='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(v=>v.trim()))rows.push(row);row=[];cell='';}else cell+=c;}
+  row.push(cell);if(row.some(v=>v.trim()))rows.push(row);
+  if(rows.length<2)throw new Error('CSV has no track rows.');
+  const headers=rows.shift().map(x=>x.trim().toLowerCase());
+  const find=(names)=>headers.findIndex(h=>names.some(n=>h===n||h.includes(n)));
+  const ti=find(['track name','track']),ai=find(['artist name','artist']);
+  if(ti<0||ai<0)throw new Error('CSV must include Track Name and Artist Name columns.');
+  return rows.map(r=>({title:(r[ti]||'').trim(),artist:(r[ai]||'').trim()})).filter(x=>x.title);
+}
+async function duotuneImportSpotifyCSV(file){
+  const raw=duotuneParseCSV(await file.text());if(!raw.length)throw new Error('No tracks found in CSV.');
+  const tracks=[];let missed=0;
+  for(let i=0;i<raw.length;i++){
+    const song=raw[i];
+    try{const result=await duotuneYoutubeRequest({action:'search',query:song.title+' '+song.artist,maxResults:5});const hit=(result.items||[]).find(x=>x.id?.videoId);if(!hit){missed++;continue;}const id=hit.id.videoId;tracks.push({id,videoId:id,url:'https://www.youtube.com/watch?v='+id,title:song.title,artist:song.artist,img:hit.snippet?.thumbnails?.medium?.url||null,dur:0,source:'YouTube',spotifyTitle:song.title});}
+    catch(e){missed++;console.warn('[DUOTUNE] Spotify CSV match skipped:',song.title,e.message);}
+  }
+  if(!tracks.length)throw new Error('Could not match any CSV tracks on YouTube.');
+  return {title:file.name.replace(/\.csv$/i,'')||'Spotify import',url:'spotify-csv:'+file.name,source:'spotify',tracks,missed};
+}
+$('#spotifyCsvBtn').onclick=()=>$('#spotifyCsvInput').click();
+$('#spotifyCsvInput').onchange=async e=>{
+  const file=e.target.files?.[0];if(!file)return;
+  try{toast('Matching Spotify tracks on YouTube…');const record=await duotuneImportSpotifyCSV(file);const saved=await duotuneSavePlaylist('me',record);S.playlists.me.push({id:saved.id,url:record.url,title:record.title,source:'spotify',tracks:record.tracks,added_at:saved.added_at||new Date().toISOString(),owner_name:S.me.name});renderPlaylists();await duotuneBroadcast({kind:'playlist-refresh'});toast(`Imported ${record.tracks.length} tracks${record.missed?`; ${record.missed} unmatched`:''}`);}
+  catch(err){toast(err.message||'CSV import failed');}finally{e.target.value='';}
+};
+
+async function duotuneResolveSpotifyTrack(song){
+  if(!song?.spotifyId||ytVideoId(song))return song;
+  const d=await duotuneYoutubeRequest({action:'search',query:song.title+' '+song.artist,maxResults:5});
+  const hit=(d.items||[]).find(x=>x.id?.videoId);if(!hit)throw new Error('No YouTube match for '+song.title);
+  song.videoId=hit.id.videoId;song.id=hit.id.videoId;song.url='https://www.youtube.com/watch?v='+song.videoId;return song;
+}
+
+async function duotuneSearchYouTube(query){
+  const data=await duotuneYoutubeRequest({action:'search',query,maxResults:12});
+  const results=(data.items||[]).map(x=>({videoId:x.id.videoId,title:x.snippet.title,artist:x.snippet.channelTitle,img:x.snippet.thumbnails?.medium?.url,source:'YouTube'}));
+  DuoTune.ui.setSearchResults(results);
+  await duotuneSaveSearchHistory(query);
+}
+
+DuoTune.on('room:connect',duotuneConnect);
+/* Profile picture upload hook: call DuoTune.uploadAvatar(file) from an existing avatar click handler. */
+DuoTune.uploadAvatar = async function(file){
+  if(!file || !/^image\//.test(file.type)) throw new Error('Choose an image file.');
+  if(file.size>5*1024*1024) throw new Error('Avatar must be 5 MB or smaller.');
+  if(!duotuneSupabase) throw new Error('Join your room first.');
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+  const path=(S.authUserId||'anonymous')+'/'+(duotunePresenceKey||'member')+'.'+ext;
+  const {error}=await duotuneSupabase.storage.from('duotune-avatars').upload(path,file,{upsert:true,contentType:file.type});
+  if(error) throw error;
+  const {data}=duotuneSupabase.storage.from('duotune-avatars').getPublicUrl(path);
+  localStorage.setItem('duotune_avatar_'+(S.code||'')+'_'+S.me.name,data.publicUrl);
+  return data.publicUrl;
+};
+DuoTune.on('room:leave',async()=>{
+  if(duotuneChannel){
+    try{await duotuneChannel.untrack();await duotuneSupabase.removeChannel(duotuneChannel);}catch(e){console.warn(e);}
+  }
+  duotuneChannel=null;clearInterval(syncHeartbeat);
+  if(ytReady && ytPlayer){try{ytPlayer.stopVideo();}catch{}}
+  S.code='';
+  const deck=$('#duotune-audio-deck'); if(deck) deck.style.display='none';
+  leaveRoom();
+});
+DuoTune.on('player:play',p=>{
+  DuoTune.ui.setPlaying(true);
+  if(ytReady && ytPlayer){try{if(S.index>=0 && ytPlayer.getPlayerState()===YT.PlayerState.CUED){} ytPlayer.seekTo(Number(p?.seconds)||S.pos,true);ytPlayer.playVideo();ytStatus('Starting playback…');}catch(e){console.error(e);}}
+  duotuneBroadcast({kind:'player',action:'play',seconds:p?.seconds||S.pos});
+  if(S.isHost)duotuneBroadcast({kind:'sync',videoId:ytVideoId(S.queue[S.index]),seconds:Number(p?.seconds)||S.pos,playing:true,index:S.index,queue:S.queue});
+});
+DuoTune.on('player:pause',p=>{DuoTune.ui.setPlaying(false);ytRemote(()=>ytPlayer?.pauseVideo());duotuneBroadcast({kind:'player',action:'pause',seconds:p?.seconds||S.pos});});
+DuoTune.on('player:seek',p=>{const seconds=Number(p?.seconds)||0;DuoTune.ui.setProgress(seconds,S.dur);ytRemote(()=>ytPlayer?.seekTo(seconds,true));duotuneBroadcast({kind:'player',action:'seek',seconds});});
+DuoTune.on('player:volume',p=>duotuneBroadcast({kind:'player',action:'volume',value:p.value}));
+DuoTune.on('chat:send',async p=>{
+  duotuneBroadcast({kind:'chat',by:S.me.name,sender:duotunePresenceKey,text:p.text,quote:p.quote||null});
+  if(duotuneSupabase && S.code){const {error}=await duotuneSupabase.from('duotune_chat').insert({room_code:S.code,user_id:S.authUserId,sender_name:S.me.name,message:p.text,quote:p.quote||null});if(error)console.warn('[DUOTUNE] Chat save failed. Run setup SQL.',error);}
+});
+DuoTune.on('reaction:send',p=>duotuneBroadcast({kind:'reaction',emoji:p.emoji}));
+DuoTune.on('queue:add',async p=>{
+  const incomingUrl=String(p?.url||'').trim();
+  const videoId=ytVideoId({videoId:p?.videoId,url:incomingUrl,id:p?.videoId||incomingUrl});
+  if(!videoId){toast('Could not read a YouTube video ID from that link.');ytStatus('Invalid YouTube link');return;}
+  let song={id:videoId,videoId,url:'https://www.youtube.com/watch?v='+videoId,title:p.title||'YouTube song',artist:p.artist||'YouTube',dur:0};
+  let target=S.queue.findIndex(x=>ytVideoId(x)===videoId);
+  if(target<0){S.queue.push(song);target=S.queue.length-1;}
+  // If this is the first track, select and load it immediately, before any network await.
+  const firstTrack=S.index<0;
+  if(firstTrack){
+    S.index=target;S.playing=false;DuoTune.ui.setNowPlaying(song);
+    if(ytReady && ytPlayer){
+      try{ytPlayer.loadVideoById({videoId});ytStatus('Loading selected track…');}
+      catch(e){console.error('[DUOTUNE] Immediate load failed',e);}
+    }else{ytStatus('Track queued · preparing player');}
+  }
+  DuoTune.ui.setQueue(S.queue,S.index);
+  await duotunePersistQueue();
+  store.set('duotune_queue_'+(S.code||'local'),JSON.stringify({queue:S.queue,index:S.index}));
+  await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:false});
+  // Fetch display metadata after the player load request, never before it.
+  try{
+    const r=await fetch('https://www.youtube.com/oembed?url='+encodeURIComponent(song.url)+'&format=json');
+    if(r.ok){
+      const d=await r.json();
+      song.title=d.title||song.title;song.artist=d.author_name||song.artist;song.img=d.thumbnail_url||null;
+      const ix=S.queue.findIndex(x=>ytVideoId(x)===videoId);
+      if(ix>=0){S.queue[ix]={...S.queue[ix],...song};DuoTune.ui.setQueue(S.queue,S.index);if(ix===S.index)DuoTune.ui.setNowPlaying(S.queue[ix]);}
+      await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:S.playing});
+    }
+  }catch(e){console.warn('[DUOTUNE] Could not load YouTube metadata',e);}
+  toast('Added to shared queue');
+});
+DuoTune.on('queue:play',async p=>{
+  if(!Number.isInteger(p.index)||!S.queue[p.index]) return;
+  S.index=p.index;
+  try{S.queue[S.index]=await duotuneResolveSpotifyTrack(S.queue[S.index]);}catch(e){toast(e.message);return;}
+  DuoTune.ui.setNowPlaying(S.queue[S.index]);DuoTune.ui.setPlaying(true);
+  const id=ytVideoId(S.queue[S.index]);
+  if(ytReady && id){ytPlayer.loadVideoById({videoId:id});ytStatus('Loading selected track…');}
+  else ytLoadCurrent(false);
+  await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:true});
+});
+DuoTune.on('player:next',async()=>{
+  if(S.index+1<S.queue.length){S.index++;try{S.queue[S.index]=await duotuneResolveSpotifyTrack(S.queue[S.index]);}catch(e){toast(e.message);return;}DuoTune.ui.setNowPlaying(S.queue[S.index]);DuoTune.ui.setPlaying(true);ytLoadCurrent(true);await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:true});}
+});
+DuoTune.on('player:prev',async()=>{
+  if(S.index>0){S.index--;DuoTune.ui.setNowPlaying(S.queue[S.index]);DuoTune.ui.setPlaying(true);ytLoadCurrent(true);await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:true});}
+});
+async function duotuneSavePlaylist(owner,record){
+  if(!duotuneSupabase||!S.code||!S.authUserId)throw new Error('Room connection is required.');
+  const row={room_code:S.code,owner_user_id:S.authUserId,owner_name:owner==='me'?S.me.name:(S.her.name||'Her'),source_url:record.url,source:String(record.source||'').toLowerCase(),title:record.title,tracks:record.tracks,added_at:new Date().toISOString()};
+  const {data,error}=await duotuneSupabase.from('duotune_playlists').insert(row).select().single();if(error)throw error;
+  return data||row;
+}
+async function duotuneLoadPlaylists(){
+  if(!duotuneSupabase||!S.code)return;
+  const {data,error}=await duotuneSupabase.from('duotune_playlists').select('*').eq('room_code',S.code).order('added_at',{ascending:true});
+  if(error){console.warn('[DUOTUNE] Playlist library table not ready:',error.message);return;}
+  const mine=[],hers=[];(data||[]).forEach(row=>{const item={id:row.id,url:row.source_url,title:row.title,source:row.source,tracks:row.tracks||[],added_at:row.added_at,owner_name:row.owner_name,owner_user_id:row.owner_user_id};(row.owner_user_id===S.authUserId?mine:hers).push(item);});
+  DuoTune.ui.setPlaylists({me:mine,her:hers});
+}
+async function duotuneSaveSearchHistory(query){
+  if(!duotuneSupabase||!S.code||!S.authUserId)return;
+  const {error}=await duotuneSupabase.from('duotune_search_history').insert({room_code:S.code,user_id:S.authUserId,query});
+  if(error)console.warn('[DUOTUNE] Search history save unavailable:',error.message);
+}
+DuoTune.on('playlist:add',async p=>{
+  const owner='me';
+  try{
+    toast('Importing playlist…');
+    const record=/open\.spotify\.com\/playlist\//i.test(p.url)?await duotuneImportSpotifyPlaylist(p.url):await duotuneImportYouTubePlaylist(p.url);
+    if(!record)return;
+    const saved=await duotuneSavePlaylist(owner,record);
+    S.playlists[owner].push({id:saved.id,url:record.url,title:record.title,source:record.source,tracks:record.tracks,added_at:saved.added_at||new Date().toISOString(),owner_name:owner==='me'?S.me.name:S.her.name});
+    renderPlaylists();await duotuneBroadcast({kind:'playlist-refresh'});
+    toast('Saved to '+(owner==='me'?'your':'her')+' playlist library.');
+  }catch(e){console.error('[DUOTUNE] Playlist import failed',e);toast(e.message||'Playlist import failed');}
+});
+DuoTune.on('playlist:remove',async p=>{
+  const list=S.playlists[p.owner]||[],item=list[p.index];if(!item)return;
+  if(!confirm('Remove this playlist from the shared library?'))return;
+  const {error}=await duotuneSupabase.from('duotune_playlists').delete().eq('id',item.id).eq('owner_user_id',S.authUserId);
+  if(error){toast('Could not remove playlist: '+error.message);return;}
+  list.splice(p.index,1);renderPlaylists();await duotuneBroadcast({kind:'playlist-refresh'});
+});
+DuoTune.on('playlist:queue',async p=>{
+  const tracks=Array.isArray(p.tracks)?p.tracks:[];if(!tracks.length)return;
+  tracks.forEach(t=>{if(!S.queue.some(x=>(x.spotifyId&&x.spotifyId===t.spotifyId)||ytVideoId(x)===ytVideoId(t)))S.queue.push({...t});});
+  DuoTune.ui.setQueue(S.queue,S.index);await duotunePersistQueue();await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:S.playing});toast('Playlist tracks added to shared queue');
+});
+DuoTune.on('queue:remove',async p=>{
+  const i=Number(p.index);if(!Number.isInteger(i)||!S.queue[i])return;
+  S.queue.splice(i,1);if(S.index===i){S.index=Math.min(i,S.queue.length-1);if(S.index>=0){DuoTune.ui.setNowPlaying(S.queue[S.index]);ytLoadCurrent(false);}else{DuoTune.ui.setNowPlaying(null);DuoTune.ui.setPlaying(false);}}else if(S.index>i)S.index--;
+  DuoTune.ui.setQueue(S.queue,S.index);await duotunePersistQueue();await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:S.playing});
+});
+DuoTune.on('queue:clear',async()=>{S.queue=[];S.index=-1;S.pos=0;DuoTune.ui.setQueue([], -1);DuoTune.ui.setNowPlaying(null);DuoTune.ui.setPlaying(false);if(ytReady&&ytPlayer)ytPlayer.stopVideo();await duotunePersistQueue();await duotuneBroadcast({kind:'queue',queue:[],index:-1,playing:false});toast('Shared queue cleared');});
+DuoTune.on('search',p=>{
+  const query=String(p?.query||'').trim(); if(!query) return;
+  duotuneSearchYouTube(query).catch(e=>{console.error(e);toast(e.message||'Search failed');});
+});
+
+/* ==========================================================================
+   MOCK ENGINE (demo only)
+   ========================================================================== */
+let tick;
+function runMock(){
+  DuoTune.ui.setQueue(MOCK_QUEUE, 0); DuoTune.ui.setNowPlaying(MOCK_QUEUE[0]);
+  clearInterval(tick);
+  tick = setInterval(()=>{ if(!S.playing) return; S.pos += .25; if (S.pos >= S.dur) jump(1); renderProgress(); }, 250);
+  setTimeout(()=>DuoTune.ui.setPresence({her:{name:'Anu', online:true}}), 2500);
+  setTimeout(()=>DuoTune.ui.receiveMessage({text:'this part ♡', quote:'two hearts, one quiet rhythm'}), 16000);
+}
+</script>
+<script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
+
+

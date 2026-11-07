@@ -1,0 +1,4 @@
+# Supabase Edge Function config
+# Keep JWT verification enabled. The function also validates the signed-in user.
+[functions.duotune-youtube]
+verify_jwt = true
