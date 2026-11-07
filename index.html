@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#f6cdd8">
-<title>DUOTUNE</title>
+<title>♡</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23fbe4ea'/%3E%3Ccircle cx='12.5' cy='16' r='8' fill='%23e48aa6'/%3E%3Ccircle cx='19.5' cy='16' r='8' fill='%231f1519' fill-opacity='.9'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -167,10 +167,11 @@ main{flex:1 1 auto;position:relative;min-height:0;overflow:hidden}
   background:linear-gradient(90deg,var(--c1) calc(var(--w) - 8%),var(--c0) calc(var(--w) + 8%));
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
   transform-origin:left center;transform:scale(.92);opacity:max(.3,calc(1 - var(--d,4)*.26));
-  filter:blur(calc(var(--d,4)*.5px)) drop-shadow(0 0 0 rgba(224,120,155,0)) drop-shadow(0 0 0 rgba(236,140,170,0));
+  filter:blur(calc(var(--d,4)*.5px)) drop-shadow(0 0 0 rgba(255,255,255,0)) drop-shadow(0 0 0 rgba(240,110,155,0)) drop-shadow(0 0 0 rgba(240,110,155,0));
   transition:transform .6s var(--ease),opacity .6s,filter .7s,--c1 .7s}
 .line.past{--w:108%}
-.line.active{--c1:var(--ink);--c0:rgba(31,21,25,.28);transform:scale(1);opacity:1;filter:blur(0) drop-shadow(0 0 10px rgba(224,120,155,.55)) drop-shadow(0 0 26px rgba(236,140,170,.5))}
+.line.active{--c1:var(--ink);--c0:rgba(31,21,25,.3);transform:scale(1);opacity:1;filter:blur(0) drop-shadow(0 0 5px rgba(255,255,255,.95)) drop-shadow(0 0 16px rgba(240,110,155,.8)) drop-shadow(0 0 36px rgba(240,110,155,.6));animation:lglow 2.6s ease-in-out .7s infinite alternate}
+@keyframes lglow{from{filter:blur(0) drop-shadow(0 0 4px rgba(255,255,255,.8)) drop-shadow(0 0 14px rgba(240,110,155,.65)) drop-shadow(0 0 30px rgba(240,110,155,.45))}to{filter:blur(0) drop-shadow(0 0 7px rgba(255,255,255,1)) drop-shadow(0 0 22px rgba(240,110,155,.95)) drop-shadow(0 0 48px rgba(240,110,155,.75))}}
 .line.picked{--c1:var(--rose2);--c0:var(--rose2);--w:108%}
 .lyr-empty{font-family:var(--serif);font-style:italic;font-size:64px;color:rgba(191,106,133,.45);padding-top:14vh;text-align:center}
 #lyricsSource{padding:0 26px 6px;text-align:center;font-size:11px;color:var(--mut);flex:none}
@@ -312,7 +313,32 @@ a.row{color:inherit;text-decoration:none}
 #duotune-audio-deck{position:absolute;left:0;bottom:0;width:356px;height:200px;z-index:-1;pointer-events:none;overflow:hidden}
 #duotune-audio-deck #ytplayer{width:100%;height:100%}
 #yt-status{display:none}
-@media (prefers-reduced-motion:reduce){*:not(.rx){animation-duration:.01ms!important;transition-duration:.01ms!important}}
+@media (prefers-reduced-motion:reduce){*:not(.rx){animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* ===== welcome v3: rose, centred photo, name + password ===== */
+.w-art{margin:0 -14px;min-height:150px}
+.w-art svg{overflow:visible}
+.rose{transform-box:view-box;transform-origin:200px 190px;animation:sway 16s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-5deg) scale(1)}to{transform:rotate(5deg) scale(1.035)}}
+.rose .lay{transform-box:view-box;transform-origin:200px 190px;animation:bloom 1.9s var(--ease) both;animation-delay:calc(var(--i)*.16s)}
+@keyframes bloom{from{transform:scale(.25) rotate(-40deg);opacity:0}to{transform:none;opacity:1}}
+.halo{animation:halo 7s ease-in-out infinite alternate;transform-box:view-box;transform-origin:200px 190px}
+@keyframes halo{from{opacity:.75;transform:scale(.96)}to{opacity:1;transform:scale(1.04)}}
+.fp{transform-box:fill-box;transform-origin:center;opacity:0;animation:fall 18s linear infinite}
+@keyframes fall{
+  0%{transform:translate(var(--x),-40px) rotate(0) scale(var(--s));opacity:0}
+  8%{opacity:.95}
+  50%{transform:translate(calc(var(--x) + 34px),200px) rotate(170deg) scale(var(--s))}
+  100%{transform:translate(calc(var(--x) - 14px),470px) rotate(340deg) scale(var(--s));opacity:0}}
+.w-form{text-align:center}
+.avatar-btn.big{display:block;width:92px;height:92px;margin:-52px auto 8px;border:3px solid rgba(255,255,255,.95);
+  box-shadow:0 16px 32px -14px rgba(150,60,100,.55);z-index:2;background:linear-gradient(145deg,#fff,#fbe4ea)}
+.avatar-btn.big #avatarPreview{font-size:32px}
+.avatar-btn.big::after{width:28px;height:28px;line-height:23px;font-size:18px;right:-2px;bottom:-2px;border:3px solid #f8d6df}
+.hello{text-align:center;margin:0 0 14px}
+.field{position:relative;margin-bottom:10px;text-align:left}
+.field .i{position:absolute;left:17px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:var(--rose2);opacity:.85;pointer-events:none}
+.field .f{margin:0;height:56px;padding:0 18px 0 49px}
 </style>
 </head>
 <body>
@@ -342,6 +368,8 @@ a.row{color:inherit;text-decoration:none}
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.3-5.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19.6 4.3v4.2h-4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4.5v10.5M7.5 10.8 12 15.2l4.5-4.4M5 19.5h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.8 19.5c.9-3.4 3.8-5.2 7.2-5.2s6.3 1.8 7.2 5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="15.2" r="1.3" fill="currentColor"/></symbol>
   <symbol id="i-logo" viewBox="0 0 32 24"><circle cx="11" cy="12" r="9" fill="#e48aa6" fill-opacity=".9"/><circle cx="21" cy="12" r="9" fill="#1f1519" fill-opacity=".92"/><path d="M16 4.52A9 9 0 0 1 16 19.48 9 9 0 0 1 16 4.52z" fill="#fff9f5"/></symbol>
 </svg>
 
@@ -350,35 +378,24 @@ a.row{color:inherit;text-decoration:none}
 
   <!-- =============== WELCOME =============== -->
   <section class="screen" id="welcome">
-    <div class="w-top"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span class="wordmark">Duo<b>tune</b></span></div>
-
-    <div class="w-art" aria-hidden="true">
-      <svg viewBox="0 0 400 400">
-        <defs>
-          <radialGradient id="gHalo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fffaf5" stop-opacity=".95"/><stop offset=".42" stop-color="#ffe3e6" stop-opacity=".6"/><stop offset="1" stop-color="#f6bfd0" stop-opacity="0"/></radialGradient>
-          <radialGradient id="gA" cx="35%" cy="30%" r="85%"><stop offset="0" stop-color="#fffaf6"/><stop offset=".5" stop-color="#fbd3d9"/><stop offset="1" stop-color="#eaa3b8"/></radialGradient>
-          <radialGradient id="gB" cx="65%" cy="28%" r="90%"><stop offset="0" stop-color="#ffeadf"/><stop offset=".55" stop-color="#f3b3c4"/><stop offset="1" stop-color="#d27a97"/></radialGradient>
-          <radialGradient id="gLens" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffe6e0"/></radialGradient>
-        </defs>
-        <circle cx="200" cy="190" r="196" fill="url(#gHalo)"/>
-        <g class="rip" fill="none" stroke="#fff" stroke-width="1.3"><ellipse cx="200" cy="336" rx="70" ry="11"/><ellipse cx="200" cy="336" rx="110" ry="18"/><ellipse cx="200" cy="336" rx="150" ry="25"/></g>
-        <g class="orb-a"><circle cx="160" cy="190" r="104" fill="url(#gA)" opacity=".94"/></g>
-        <g class="orb-b"><circle cx="240" cy="190" r="104" fill="url(#gB)" opacity=".78"/></g>
-        <path d="M200 94A104 104 0 0 1 200 286 104 104 0 0 1 200 94z" fill="url(#gLens)" opacity=".78"/>
-        <circle cx="160" cy="190" r="104" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.2"/>
-        <circle cx="240" cy="190" r="104" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.2"/>
-        <g fill="#fff"><path class="tw" d="M64 92l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/><path class="tw" d="M338 70l2.4 7 7 2.4-7 2.4-2.4 7-2.4-7-7-2.4 7-2.4z"/><path class="tw" d="M348 250l2.4 7 7 2.4-7 2.4-2.4 7-2.4-7-7-2.4 7-2.4z"/><path class="tw" d="M48 262l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/><circle class="tw" cx="120" cy="40" r="2"/><circle class="tw" cx="300" cy="360" r="2"/></g>
-      </svg>
-    </div>
+    <div class="w-art" aria-hidden="true"><svg viewBox="0 0 400 400" aria-hidden="true">
+<defs>
+<radialGradient id="gHalo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fffaf5" stop-opacity=".95"/><stop offset=".45" stop-color="#ffe0e5" stop-opacity=".55"/><stop offset="1" stop-color="#f6bfd0" stop-opacity="0"/></radialGradient>
+<linearGradient id="pgf" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#e8809f"/><stop offset="1" stop-color="#fbd3db"/></linearGradient>
+<filter id="ps" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2.5" stdDeviation="3.2" flood-color="#8f2f55" flood-opacity=".3"/></filter>
+<linearGradient id="pg1" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ee9db4"/><stop offset=".55" stop-color="#ee9db4" stop-opacity=".92"/><stop offset="1" stop-color="#fde8ea"/></linearGradient><linearGradient id="pg2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#e5809f"/><stop offset=".55" stop-color="#e5809f" stop-opacity=".92"/><stop offset="1" stop-color="#fbd5dc"/></linearGradient><linearGradient id="pg3" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#db6e90"/><stop offset=".55" stop-color="#db6e90" stop-opacity=".92"/><stop offset="1" stop-color="#f8bfce"/></linearGradient><linearGradient id="pg4" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#cf5a80"/><stop offset=".55" stop-color="#cf5a80" stop-opacity=".92"/><stop offset="1" stop-color="#f2a6ba"/></linearGradient><linearGradient id="pg5" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#c04872"/><stop offset=".55" stop-color="#c04872" stop-opacity=".92"/><stop offset="1" stop-color="#ea90aa"/></linearGradient>
+</defs>
+<circle class="halo" cx="200" cy="190" r="196" fill="url(#gHalo)"/>
+<g class="rose"><g class="lay" style="--i:1" filter="url(#ps)"><path d="M0 0 C-52.0 -19.8 -59.8 -90.2 -20.8 -110.0 Q0 -118.8 20.8 -110.0 C59.8 -90.2 52.0 -19.8 0 0Z" transform="translate(200 190) rotate(0.0) translate(0 -26)" fill="url(#pg1)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-52.0 -19.8 -59.8 -90.2 -20.8 -110.0 Q0 -118.8 20.8 -110.0 C59.8 -90.2 52.0 -19.8 0 0Z" transform="translate(200 190) rotate(51.4) translate(0 -26)" fill="url(#pg1)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-52.0 -19.8 -59.8 -90.2 -20.8 -110.0 Q0 -118.8 20.8 -110.0 C59.8 -90.2 52.0 -19.8 0 0Z" transform="translate(200 190) rotate(102.9) translate(0 -26)" fill="url(#pg1)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-52.0 -19.8 -59.8 -90.2 -20.8 -110.0 Q0 -118.8 20.8 -110.0 C59.8 -90.2 52.0 -19.8 0 0Z" transform="translate(200 190) rotate(154.3) translate(0 -26)" fill="url(#pg1)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-52.0 -19.8 -59.8 -90.2 -20.8 -110.0 Q0 -118.8 20.8 -110.0 C59.8 -90.2 52.0 -19.8 0 0Z" transform="translate(200 190) rotate(205.7) translate(0 -26)" fill="url(#pg1)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-52.0 -19.8 -59.8 -90.2 -20.8 -110.0 Q0 -118.8 20.8 -110.0 C59.8 -90.2 52.0 -19.8 0 0Z" transform="translate(200 190) rotate(257.1) translate(0 -26)" fill="url(#pg1)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-52.0 -19.8 -59.8 -90.2 -20.8 -110.0 Q0 -118.8 20.8 -110.0 C59.8 -90.2 52.0 -19.8 0 0Z" transform="translate(200 190) rotate(308.6) translate(0 -26)" fill="url(#pg1)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/></g><g class="lay" style="--i:2" filter="url(#ps)"><path d="M0 0 C-46.0 -16.2 -52.9 -73.8 -18.4 -90.0 Q0 -97.2 18.4 -90.0 C52.9 -73.8 46.0 -16.2 0 0Z" transform="translate(200 190) rotate(25.0) translate(0 -18)" fill="url(#pg2)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-46.0 -16.2 -52.9 -73.8 -18.4 -90.0 Q0 -97.2 18.4 -90.0 C52.9 -73.8 46.0 -16.2 0 0Z" transform="translate(200 190) rotate(76.4) translate(0 -18)" fill="url(#pg2)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-46.0 -16.2 -52.9 -73.8 -18.4 -90.0 Q0 -97.2 18.4 -90.0 C52.9 -73.8 46.0 -16.2 0 0Z" transform="translate(200 190) rotate(127.9) translate(0 -18)" fill="url(#pg2)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-46.0 -16.2 -52.9 -73.8 -18.4 -90.0 Q0 -97.2 18.4 -90.0 C52.9 -73.8 46.0 -16.2 0 0Z" transform="translate(200 190) rotate(179.3) translate(0 -18)" fill="url(#pg2)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-46.0 -16.2 -52.9 -73.8 -18.4 -90.0 Q0 -97.2 18.4 -90.0 C52.9 -73.8 46.0 -16.2 0 0Z" transform="translate(200 190) rotate(230.7) translate(0 -18)" fill="url(#pg2)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-46.0 -16.2 -52.9 -73.8 -18.4 -90.0 Q0 -97.2 18.4 -90.0 C52.9 -73.8 46.0 -16.2 0 0Z" transform="translate(200 190) rotate(282.1) translate(0 -18)" fill="url(#pg2)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-46.0 -16.2 -52.9 -73.8 -18.4 -90.0 Q0 -97.2 18.4 -90.0 C52.9 -73.8 46.0 -16.2 0 0Z" transform="translate(200 190) rotate(333.6) translate(0 -18)" fill="url(#pg2)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/></g><g class="lay" style="--i:3" filter="url(#ps)"><path d="M0 0 C-40.0 -13.0 -46.0 -59.0 -16.0 -72.0 Q0 -77.8 16.0 -72.0 C46.0 -59.0 40.0 -13.0 0 0Z" transform="translate(200 190) rotate(12.0) translate(0 -12)" fill="url(#pg3)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-40.0 -13.0 -46.0 -59.0 -16.0 -72.0 Q0 -77.8 16.0 -72.0 C46.0 -59.0 40.0 -13.0 0 0Z" transform="translate(200 190) rotate(72.0) translate(0 -12)" fill="url(#pg3)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-40.0 -13.0 -46.0 -59.0 -16.0 -72.0 Q0 -77.8 16.0 -72.0 C46.0 -59.0 40.0 -13.0 0 0Z" transform="translate(200 190) rotate(132.0) translate(0 -12)" fill="url(#pg3)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-40.0 -13.0 -46.0 -59.0 -16.0 -72.0 Q0 -77.8 16.0 -72.0 C46.0 -59.0 40.0 -13.0 0 0Z" transform="translate(200 190) rotate(192.0) translate(0 -12)" fill="url(#pg3)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-40.0 -13.0 -46.0 -59.0 -16.0 -72.0 Q0 -77.8 16.0 -72.0 C46.0 -59.0 40.0 -13.0 0 0Z" transform="translate(200 190) rotate(252.0) translate(0 -12)" fill="url(#pg3)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-40.0 -13.0 -46.0 -59.0 -16.0 -72.0 Q0 -77.8 16.0 -72.0 C46.0 -59.0 40.0 -13.0 0 0Z" transform="translate(200 190) rotate(312.0) translate(0 -12)" fill="url(#pg3)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/></g><g class="lay" style="--i:4" filter="url(#ps)"><path d="M0 0 C-34.0 -9.7 -39.1 -44.3 -13.6 -54.0 Q0 -58.3 13.6 -54.0 C39.1 -44.3 34.0 -9.7 0 0Z" transform="translate(200 190) rotate(40.0) translate(0 -7)" fill="url(#pg4)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-34.0 -9.7 -39.1 -44.3 -13.6 -54.0 Q0 -58.3 13.6 -54.0 C39.1 -44.3 34.0 -9.7 0 0Z" transform="translate(200 190) rotate(112.0) translate(0 -7)" fill="url(#pg4)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-34.0 -9.7 -39.1 -44.3 -13.6 -54.0 Q0 -58.3 13.6 -54.0 C39.1 -44.3 34.0 -9.7 0 0Z" transform="translate(200 190) rotate(184.0) translate(0 -7)" fill="url(#pg4)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-34.0 -9.7 -39.1 -44.3 -13.6 -54.0 Q0 -58.3 13.6 -54.0 C39.1 -44.3 34.0 -9.7 0 0Z" transform="translate(200 190) rotate(256.0) translate(0 -7)" fill="url(#pg4)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-34.0 -9.7 -39.1 -44.3 -13.6 -54.0 Q0 -58.3 13.6 -54.0 C39.1 -44.3 34.0 -9.7 0 0Z" transform="translate(200 190) rotate(328.0) translate(0 -7)" fill="url(#pg4)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/></g><g class="lay" style="--i:5" filter="url(#ps)"><path d="M0 0 C-28.0 -6.8 -32.2 -31.2 -11.2 -38.0 Q0 -41.0 11.2 -38.0 C32.2 -31.2 28.0 -6.8 0 0Z" transform="translate(200 190) rotate(8.0) translate(0 -3)" fill="url(#pg5)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-28.0 -6.8 -32.2 -31.2 -11.2 -38.0 Q0 -41.0 11.2 -38.0 C32.2 -31.2 28.0 -6.8 0 0Z" transform="translate(200 190) rotate(98.0) translate(0 -3)" fill="url(#pg5)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-28.0 -6.8 -32.2 -31.2 -11.2 -38.0 Q0 -41.0 11.2 -38.0 C32.2 -31.2 28.0 -6.8 0 0Z" transform="translate(200 190) rotate(188.0) translate(0 -3)" fill="url(#pg5)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/><path d="M0 0 C-28.0 -6.8 -32.2 -31.2 -11.2 -38.0 Q0 -41.0 11.2 -38.0 C32.2 -31.2 28.0 -6.8 0 0Z" transform="translate(200 190) rotate(278.0) translate(0 -3)" fill="url(#pg5)" stroke="#fff" stroke-opacity=".55" stroke-width="1.1"/></g><polyline points="201.4,190.0 201.5,190.1 201.6,190.3 201.7,190.4 201.8,190.6 201.9,190.8 201.9,191.0 201.9,191.2 201.9,191.5 201.9,191.7 201.8,191.9 201.7,192.2 201.6,192.4 201.5,192.7 201.3,192.9 201.1,193.1 200.9,193.3 200.6,193.5 200.4,193.7 200.1,193.8 199.8,193.9 199.4,194.0 199.1,194.1 198.7,194.1 198.3,194.1 197.9,194.1 197.5,194.0 197.1,193.9 196.8,193.7 196.4,193.5 196.0,193.3 195.6,193.0 195.3,192.7 195.0,192.4 194.7,192.0 194.4,191.6 194.2,191.2 194.0,190.7 193.8,190.2 193.7,189.7 193.6,189.2 193.6,188.6 193.6,188.1 193.6,187.5 193.7,187.0 193.9,186.4 194.1,185.8 194.4,185.3 194.7,184.7 195.0,184.2 195.5,183.7 195.9,183.3 196.4,182.9 197.0,182.5 197.6,182.1 198.2,181.8 198.8,181.6 199.5,181.4 200.2,181.3 200.9,181.2 201.7,181.2 202.4,181.2 203.2,181.3 203.9,181.5 204.7,181.7 205.4,182.0 206.1,182.4 206.8,182.8 207.5,183.3 208.1,183.9 208.7,184.5 209.2,185.2 209.7,185.9 210.1,186.6 210.5,187.5 210.8,188.3 211.0,189.2 211.1,190.1 211.2,191.0 211.2,191.9 211.2,192.9 211.0,193.8 210.8,194.7 210.5,195.7 210.1,196.6 209.6,197.5 209.1,198.3 208.4,199.1 207.7,199.9 207.0,200.6 206.2,201.2 205.3,201.8 204.3,202.3 203.4,202.7 202.3,203.1 201.3,203.4 200.2,203.6 199.1,203.6 197.9,203.7 196.8,203.6 195.7,203.4 194.5,203.1 193.4,202.7 192.3,202.2 191.3,201.7 190.3,201.0 189.3,200.3 188.4,199.5 187.6,198.6 186.8,197.6 186.1,196.5 185.5,195.4 185.0,194.3 184.6,193.0 184.3,191.8 184.0,190.5 183.9,189.2 183.9,187.9 184.0,186.5 184.2,185.2 184.6,183.9 185.0,182.6 185.6,181.3 186.2,180.1 187.0,178.9 187.8,177.8 188.8,176.8 189.8,175.8 190.9,174.9 192.1,174.1 193.4,173.4 194.8,172.8 196.2,172.3 197.6,171.9 199.1,171.7 200.6,171.5 202.1,171.5 203.6,171.6 205.2,171.8 206.7,172.2 208.1,172.7 209.6,173.3 211.0,174.0 212.3,174.9 213.6,175.9 214.8,176.9 215.9,178.1 217.0,179.4 217.9,180.7 218.7,182.2 219.4,183.7 220.0,185.3 220.4,186.9 220.7,188.6 220.9,190.3 220.9,192.0 220.8,193.7 220.6,195.4 220.2,197.1 219.7,198.8 219.0,200.4 218.2,202.0 217.2,203.5 216.2,205.0 215.0,206.3 213.7,207.6 212.2,208.8 210.7,209.8 209.1,210.7 207.5,211.5 205.7,212.2 203.9,212.7 202.0,213.1 200.1,213.3 198.2,213.4 196.3,213.3 194.4,213.0 192.5,212.6 190.6,212.0 188.8,211.3 187.0,210.4 185.3,209.4 183.7,208.2 182.2,206.9 180.8,205.5 179.5,204.0 178.3,202.3 177.2,200.5 176.3,198.7 175.6,196.8 175.0,194.8 174.6,192.7 174.3,190.6 174.2,188.5 174.3,186.4 174.5,184.3 175.0,182.2 175.6,180.1 176.3,178.1 177.3,176.2" fill="none" stroke="#a63d68" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="200" cy="190" r="7" fill="#b0446f" fill-opacity=".85"/></g>
+<g class="fall"><path class="fp" d="M0 0 C-8.0 -2.9 -9.2 -13.1 -3.2 -16.0 Q0 -17.3 3.2 -16.0 C9.2 -13.1 8.0 -2.9 0 0Z" fill="url(#pgf)" style="--x:80px;--s:0.9;animation-duration:16s;animation-delay:-0s"/><path class="fp" d="M0 0 C-8.0 -2.9 -9.2 -13.1 -3.2 -16.0 Q0 -17.3 3.2 -16.0 C9.2 -13.1 8.0 -2.9 0 0Z" fill="url(#pgf)" style="--x:140px;--s:0.7;animation-duration:20s;animation-delay:-3s"/><path class="fp" d="M0 0 C-8.0 -2.9 -9.2 -13.1 -3.2 -16.0 Q0 -17.3 3.2 -16.0 C9.2 -13.1 8.0 -2.9 0 0Z" fill="url(#pgf)" style="--x:240px;--s:1.0;animation-duration:18s;animation-delay:-6s"/><path class="fp" d="M0 0 C-8.0 -2.9 -9.2 -13.1 -3.2 -16.0 Q0 -17.3 3.2 -16.0 C9.2 -13.1 8.0 -2.9 0 0Z" fill="url(#pgf)" style="--x:310px;--s:0.8;animation-duration:22s;animation-delay:-2s"/><path class="fp" d="M0 0 C-8.0 -2.9 -9.2 -13.1 -3.2 -16.0 Q0 -17.3 3.2 -16.0 C9.2 -13.1 8.0 -2.9 0 0Z" fill="url(#pgf)" style="--x:350px;--s:0.65;animation-duration:17s;animation-delay:-9s"/><path class="fp" d="M0 0 C-8.0 -2.9 -9.2 -13.1 -3.2 -16.0 Q0 -17.3 3.2 -16.0 C9.2 -13.1 8.0 -2.9 0 0Z" fill="url(#pgf)" style="--x:50px;--s:0.75;animation-duration:24s;animation-delay:-12s"/><path class="fp" d="M0 0 C-8.0 -2.9 -9.2 -13.1 -3.2 -16.0 Q0 -17.3 3.2 -16.0 C9.2 -13.1 8.0 -2.9 0 0Z" fill="url(#pgf)" style="--x:200px;--s:0.6;animation-duration:19s;animation-delay:-5s"/><path class="fp" d="M0 0 C-8.0 -2.9 -9.2 -13.1 -3.2 -16.0 Q0 -17.3 3.2 -16.0 C9.2 -13.1 8.0 -2.9 0 0Z" fill="url(#pgf)" style="--x:280px;--s:0.7;animation-duration:21s;animation-delay:-14s"/></g>
+</svg></div>
 
     <form class="w-form" id="welcomeForm" autocomplete="off">
+      <label for="avatarInput" id="avatarPick" class="avatar-btn big" aria-label="Choose your photo"><span id="avatarPreview">♡</span><span id="avatarPickText" hidden></span></label>
       <h1 class="hello">Hello, <em id="helloName">there</em> <span class="h">♡</span></h1>
-      <div class="idrow">
-        <label for="avatarInput" id="avatarPick" class="avatar-btn" aria-label="Add your profile picture"><span id="avatarPreview">♡</span><span id="avatarPickText" hidden></span></label>
-        <input class="f" id="nameInput" placeholder="Your name" maxlength="20" aria-label="Your name">
-      </div>
-      <input class="f hidden" id="roomCodeInput" type="hidden" value="KIRANUU" aria-hidden="true">
-      <input class="f" id="roomPasswordInput" type="password" placeholder="Password" maxlength="128" aria-label="Password" autocomplete="current-password" required>
+      <div class="field"><svg class="i"><use href="#i-user"/></svg><input class="f" id="nameInput" placeholder="Your name" maxlength="20" aria-label="Your name"></div>
+      <input id="roomCodeInput" type="hidden" value="">
+      <div class="field"><svg class="i"><use href="#i-lock"/></svg><input class="f" id="roomPasswordInput" type="password" placeholder="Password" maxlength="128" aria-label="Password" autocomplete="current-password" required></div>
       <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
       <button class="primary" id="goBtn" type="submit"><span id="goLabel">Let’s Listen</span><svg class="i"><use href="#i-arrow"/></svg></button>
     </form>
@@ -498,8 +515,7 @@ a.row{color:inherit;text-decoration:none}
   <div class="sheet-bg" id="sheetBg"></div>
   <div class="sheet" id="sheet">
     <div class="gr"></div>
-    <div class="sheet-logo"><svg class="logo" aria-hidden="true"><use href="#i-logo"/></svg><span class="wordmark">Duo<b>tune</b></span></div>
-    <div class="who"><span class="av me on" id="shMeAv">K</span><span id="shMeName">You</span><small>You</small></div>
+        <div class="who"><span class="av me on" id="shMeAv">K</span><span id="shMeName">You</span><small>You</small></div>
     <div class="who"><span class="av her" id="shHerAv">♡</span><span id="shHerName">Waiting</span><small id="shHerState">Not here yet</small></div>
     <div class="code-box"><strong id="shCode">—</strong><button id="copyCode" aria-label="Copy invite link"><svg class="i"><use href="#i-copy"/></svg></button></div>
     <button class="leave-btn hidden" id="reviewRequestsBtn">Review access requests</button>
@@ -839,7 +855,7 @@ $('#fwd15').onclick  = () => seekBy(15);
 $('#seek').addEventListener('input', e => { S.dragging = true; const t = e.target.value/1000*S.dur; $('#seek').style.setProperty('--p', e.target.value/10+'%'); $('#elapsed').textContent = fmt(t); $('#remain').textContent='-'+fmt(S.dur-t); });
 $('#seek').addEventListener('change', e => { const t = e.target.value/1000*S.dur; S.dragging = false; act('player:seek',{seconds:t},()=>{S.pos=t; renderProgress()}); });
 $('#vol').addEventListener('input', e => { e.target.style.setProperty('--p', e.target.value+'%'); DuoTune.emit('player:volume',{value:+e.target.value}); });
-$('#vol').style.setProperty('--p','75%');
+{ const sv=store.get('duotune_vol'); const v=(sv!==null&&sv!==''&&!isNaN(+sv))?Math.max(0,Math.min(100,+sv)):75; $('#vol').value=v; $('#vol').style.setProperty('--p',v+'%'); }
 $('#fav').onclick = favToggle;
 
 /* ==========================================================================
@@ -1140,7 +1156,7 @@ function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add(
 
 DuoTune.ui.enterRoom = ({name, code}) => {
   S.me.name = name; S.code = code; favLoad(); statsLoad();
-  $('#shCode').textContent = code; $('#footCode').textContent = 'ROOM · ' + code;
+  $('#shCode').textContent = ''; $('#footCode').textContent = '';
   $('#welcome').classList.add('leave'); setTimeout(()=>$('#welcome').classList.add('hidden'), 450);
   $('#room').classList.remove('hidden'); requestAnimationFrame(()=>requestAnimationFrame(()=>$('#room').classList.add('in')));
   go('player'); renderPresence(); renderPlaylists(); renderQueue(); renderFavs(); syncFavHeart();
@@ -1256,10 +1272,7 @@ function duotuneReceive(payload){
       if(payload.action==='play'){ DuoTune.ui.setPlaying(true); ytRemote(()=>{ytPlayer.seekTo(Number(payload.seconds)||0,true);ytPlayer.playVideo();}); }
       if(payload.action==='pause'){ DuoTune.ui.setPlaying(false); ytRemote(()=>ytPlayer.pauseVideo()); }
       if(payload.action==='seek'){ DuoTune.ui.setProgress(Number(payload.seconds)||0,S.dur); ytRemote(()=>ytPlayer.seekTo(Number(payload.seconds)||0,true)); }
-      if(payload.action==='volume' && Number.isFinite(payload.value)) {
-        $('#vol').value=payload.value;
-        $('#vol').style.setProperty('--p',payload.value+'%');
-      }
+      /* UI-FIX: partner volume is ignored (volume is local only) */
       break;
     case 'fav': /* UI-FIX: favourites */
       if(payload.sender!==duotunePresenceKey&&payload.song){const s=payload.song;S.favs.her=S.favs.her.filter(x=>x.id!==s.id);if(payload.liked)S.favs.her.unshift(s);favSave();renderFavs();if(payload.liked)toast((payload.by||'She')+' ♡ '+(s.title||'a song'));}
@@ -1297,7 +1310,7 @@ async function duotuneConnect({name,code,password}){
     if(!S.authUserId) throw new Error('Could not establish your private device identity.');
     S.isHost=false;
     const roomCode=code ? duotuneRoomCode(code) : INVITE_ROOM_TOKEN;
-    if(roomCode!==INVITE_ROOM_TOKEN) throw new Error('DUOTUNE room code is fixed. Use KIRANUU.');
+    if(roomCode!==INVITE_ROOM_TOKEN) throw new Error('Could not join this room.');
     if(!password || password!=='23') throw new Error('Incorrect password.');
     let access=await duotuneSupabase.rpc('duotune_request_room_access',{p_room_code:roomCode,p_display_name:name,p_password:password});
     if(access.error) throw new Error(access.error.message);
@@ -1366,7 +1379,7 @@ function duotuneSetMediaSession(song){
   if(!('mediaSession' in navigator) || !song)return;
   try{
     if('MediaMetadata' in window) navigator.mediaSession.metadata=new MediaMetadata({
-      title:String(song.title||'DUOTUNE'),artist:String(song.artist||'DUOTUNE'),album:'DUOTUNE',
+      title:String(song.title||'♡'),artist:String(song.artist||''),album:'',
       artwork:song.img?[{src:song.img,sizes:'512x512',type:'image/jpeg'}]:[]
     });
     const actions={
@@ -1434,7 +1447,7 @@ function ytInitPlayer(){
     playerVars:{playsinline:1,rel:0,iv_load_policy:3,origin:location.origin},
     events:{
       onReady:()=>{
-        ytReady=true; ytStatus('Player ready · add a track');duotuneStartSyncHeartbeat();
+        ytReady=true; try{ytPlayer.setVolume(+$('#vol').value);}catch{} ytStatus('Player ready · add a track');duotuneStartSyncHeartbeat();
         console.info('[DUOTUNE] YouTube player ready');
         if(S.index>=0) ytLoadCurrent(false);
         clearInterval(ytProgressTimer);
@@ -1567,7 +1580,7 @@ async function duotuneFetchLyrics(song,keep){
   const params=new URLSearchParams({track_name:song.title,artist_name:song.artist});
   if(song.dur>0)params.set('duration',String(Math.round(song.dur)));
   try{
-    let res=await fetch('https://lrclib.net/api/get?'+params.toString(),{headers:{'X-User-Agent':'DUOTUNE/1.0 (private two-person music room)'}}),record=res.ok?await res.json():null;
+    let res=await fetch('https://lrclib.net/api/get?'+params.toString(),{headers:{'X-User-Agent':'private-listening-room/1.0'}}),record=res.ok?await res.json():null;
     if(!record){
       const sr=await fetch('https://lrclib.net/api/search?'+new URLSearchParams({track_name:song.title,artist_name:song.artist}));
       if(sr.ok){const list=await sr.json();record=(list||[]).find(x=>x.syncedLyrics&&x.artistName?.toLowerCase()===song.artist.toLowerCase())||(list||[]).find(x=>x.syncedLyrics);}
@@ -1581,9 +1594,9 @@ async function duotuneFetchLyrics(song,keep){
 
 
 async function duotuneYoutubeRequest(payload){
-  if(!duotuneSupabase)throw new Error('Connect to your DUOTUNE room first.');
+  if(!duotuneSupabase)throw new Error('Connect to the room first.');
   const {data,error}=await duotuneSupabase.functions.invoke('duotune-youtube',{body:payload});
-  if(error)throw new Error('YouTube service is not configured yet. Deploy the DUOTUNE YouTube Edge Function first.');
+  if(error)throw new Error('YouTube service is not configured yet. The YouTube service is not set up yet.');
   if(data?.error)throw new Error(data.error);
   return data;
 }
@@ -1713,7 +1726,7 @@ DuoTune.on('player:play',p=>{
 });
 DuoTune.on('player:pause',p=>{DuoTune.ui.setPlaying(false);ytRemote(()=>ytPlayer?.pauseVideo());duotuneBroadcast({kind:'player',action:'pause',seconds:p?.seconds||S.pos});});
 DuoTune.on('player:seek',p=>{const seconds=Number(p?.seconds)||0;DuoTune.ui.setProgress(seconds,S.dur);ytRemote(()=>ytPlayer?.seekTo(seconds,true));duotuneBroadcast({kind:'player',action:'seek',seconds});});
-DuoTune.on('player:volume',p=>duotuneBroadcast({kind:'player',action:'volume',value:p.value}));
+DuoTune.on('player:volume',p=>{ try{ if(ytReady&&ytPlayer)ytPlayer.setVolume(Math.max(0,Math.min(100,p.value))); }catch{} store.set('duotune_vol',String(p.value)); }); /* UI-FIX: volume is local only */
 DuoTune.on('chat:send',async p=>{
   duotuneBroadcast({kind:'chat',by:S.me.name,sender:duotunePresenceKey,text:p.text,quote:p.quote||null});
   if(duotuneSupabase && S.code){const {error}=await duotuneSupabase.from('duotune_chat').insert({room_code:S.code,user_id:S.authUserId,sender_name:S.me.name,message:p.text,quote:p.quote||null});if(error)console.warn('[DUOTUNE] Chat save failed. Run setup SQL.',error);}
@@ -1853,5 +1866,4 @@ function runMock(){
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
-
 
