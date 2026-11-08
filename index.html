@@ -395,9 +395,11 @@ a.row{color:inherit;text-decoration:none}
       <h1 class="hello">Hello, <em id="helloName">there</em> <span class="h">♡</span></h1>
       <div class="field"><svg class="i"><use href="#i-user"/></svg><input class="f" id="nameInput" placeholder="Your name" maxlength="20" aria-label="Your name"></div>
       <input id="roomCodeInput" type="hidden" value="">
-      <div class="field"><svg class="i"><use href="#i-lock"/></svg><input class="f" id="roomPasswordInput" type="password" placeholder="Password" maxlength="128" aria-label="Password" autocomplete="current-password" required></div>
+      <div class="field" id="passwordField"><svg class="i"><use href="#i-lock"/></svg><input class="f" id="roomPasswordInput" type="password" placeholder="Password" maxlength="8" aria-label="Password" autocomplete="current-password" required></div>
+      <div class="field hidden" id="phraseField"><svg class="i"><use href="#i-heart"/></svg><input class="f" id="phraseInput" type="text" placeholder="Your email phrase" maxlength="80" aria-label="Email phrase" autocomplete="one-time-code"></div>
       <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-      <button class="primary" id="goBtn" type="submit"><span id="goLabel">Let’s Listen</span><svg class="i"><use href="#i-arrow"/></svg></button>
+      <button class="primary" id="goBtn" type="submit"><span id="goLabel">Send my phrase</span><svg class="i"><use href="#i-arrow"/></svg></button>
+      <button type="button" id="resendPhraseBtn" class="hidden" style="margin-top:10px;background:none;border:0;color:var(--rose2);font:inherit;text-decoration:underline" >Send a fresh phrase</button>
     </form>
   </section>
 
@@ -1186,19 +1188,81 @@ avatarInput.addEventListener('change',()=>{
   if(file.size>4*1024*1024){toast('Choose a picture under 4 MB');avatarInput.value='';return;}
   const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const canvas=document.createElement('canvas'),max=256,scale=Math.min(1,max/Math.max(img.width,img.height));canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);S.avatar=canvas.toDataURL('image/jpeg',.78);store.set('duotune_avatar_self',S.avatar);$('#avatarPreview').innerHTML=`<img src="${S.avatar}" style="width:100%;height:100%;object-fit:cover">`;$('#avatarPickText').textContent='Change profile picture';};img.src=reader.result;};reader.readAsDataURL(file);
 });
-$('#welcomeForm').onsubmit=e=>{
-  e.preventDefault();const name=nameInput.value.trim(),code=INVITE_ROOM_TOKEN,password=$('#roomPasswordInput').value;
-  if(!name){toast('Enter your name first');nameInput.focus();return;}
-  if(!password){toast('Enter the password');$('#roomPasswordInput').focus();return;}
-  if(S.avatar)store.set('duotune_avatar_self',S.avatar);store.set('duotune_name',name);
-  DuoTune.emit('room:connect',{name,code,password});
+let duotuneLoginChallengeId=null;
+let duotuneLoginName=null;
+async function duotunePrepareAuth(){
+  if(!window.supabase?.createClient) throw new Error('Supabase library did not load. Refresh the page and try again.');
+  if(!duotuneSupabase) duotuneSupabase=window.supabase.createClient(DUOTUNE_SUPABASE_URL,DUOTUNE_SUPABASE_KEY,{realtime:{params:{eventsPerSecond:10}}});
+  let {data,error}=await duotuneSupabase.auth.getSession();
+  if(error) throw error;
+  if(!data.session){
+    const signed=await duotuneSupabase.auth.signInAnonymously();
+    if(signed.error) throw new Error('Anonymous sign-in failed. Check that Anonymous Sign-ins are enabled in Supabase Auth.');
+    data=signed.data;
+  }
+  S.authUserId=data.session?.user?.id||null;
+  if(!S.authUserId) throw new Error('Could not establish your private device identity.');
+}
+function resetPhraseStep(){
+  duotuneLoginChallengeId=null;duotuneLoginName=null;
+  $('#phraseField').classList.add('hidden');$('#passwordField').classList.remove('hidden');
+  $('#phraseInput').value='';$('#roomPasswordInput').value='';
+  $('#goLabel').textContent='Send my phrase';$('#resendPhraseBtn').classList.add('hidden');
+}
+async function duotuneSendLoginPhrase(name,password){
+  await duotunePrepareAuth();
+  const {data,error}=await duotuneSupabase.functions.invoke('duotune-login',{body:{action:'send',name,pin:password}});
+  if(error) throw new Error(data?.error||error.message||'Could not send your email phrase.');
+  if(!data?.success) throw new Error(data?.error||data?.message||'Could not send your email phrase.');
+  const id=data.challengeId||data.challenge_id||data.id;
+  if(!id) throw new Error('The mail server did not return a challenge ID. Check the deployed DUOTUNE login function.');
+  duotuneLoginChallengeId=id;duotuneLoginName=name;
+  $('#passwordField').classList.add('hidden');$('#phraseField').classList.remove('hidden');
+  $('#phraseInput').focus();$('#goLabel').textContent='Verify & enter';$('#resendPhraseBtn').classList.remove('hidden');
+  toast('Phrase sent to your registered email. Check your inbox!');
+}
+async function duotuneVerifyLoginPhrase(phrase){
+  await duotunePrepareAuth();
+  const {data,error}=await duotuneSupabase.functions.invoke('duotune-login',{body:{action:'verify',name:duotuneLoginName,challengeId:duotuneLoginChallengeId,phrase}});
+  if(error) throw new Error(data?.error||error.message||'Phrase verification failed.');
+  if(!data?.success) throw new Error(data?.error||data?.message||'That phrase is not correct.');
+  if(data.userId&&data.userId!==S.authUserId) throw new Error('This verification belongs to a different device session.');
+  const name=duotuneLoginName;
+  if(S.avatar)store.set('duotune_avatar_self',S.avatar);
+  store.set('duotune_name',name);
+  resetPhraseStep();
+  DuoTune.emit('room:connect',{name,code:INVITE_ROOM_TOKEN,verified:true,verification:data});
+}
+$('#welcomeForm').onsubmit=async e=>{
+  e.preventDefault();
+  const name=nameInput.value.trim(),password=$('#roomPasswordInput').value;
+  if(!duotuneLoginChallengeId){
+    if(!['kiran','pooja'].includes(name.toLowerCase())){toast('Enter Kiran or Pooja to continue');nameInput.focus();return;}
+    if(password!=='5'){toast('Incorrect password');$('#roomPasswordInput').focus();return;}
+    const fixedName=name.toLowerCase()==='kiran'?'Kiran':'Pooja';
+    try{ $('#goBtn').disabled=true; await duotuneSendLoginPhrase(fixedName,password); }
+    catch(err){console.error('[DUOTUNE] Phrase send failed',err);toast(err.message||'Could not send phrase');}
+    finally{$('#goBtn').disabled=false;}
+    return;
+  }
+  const phrase=$('#phraseInput').value.trim();
+  if(!phrase){toast('Enter the phrase sent to your email');$('#phraseInput').focus();return;}
+  try{ $('#goBtn').disabled=true; await duotuneVerifyLoginPhrase(phrase); }
+  catch(err){console.error('[DUOTUNE] Phrase verification failed',err);toast(err.message||'Could not verify phrase');}
+  finally{$('#goBtn').disabled=false;}
+};
+$('#resendPhraseBtn').onclick=async()=>{
+  if(!duotuneLoginName)return;
+  try{ $('#resendPhraseBtn').disabled=true; await duotuneSendLoginPhrase(duotuneLoginName,'5'); }
+  catch(err){toast(err.message||'Could not resend phrase');}
+  finally{$('#resendPhraseBtn').disabled=false;}
 };
 
 /* ==========================================================================
    SUPABASE REALTIME ADAPTER · DUOTUNE
    UI/CSS intentionally unchanged.
    This uses Realtime Presence + Broadcast. Persistent history/authentication
-   and strict two-member enforcement are a separate production-hardening step.
+   and private email-phrase login are handled by the DUOTUNE login Edge Function.
    ========================================================================== */
 const DUOTUNE_SUPABASE_URL = 'https://daqmareanfmfbqqqtbft.supabase.co';
 const DUOTUNE_SUPABASE_KEY = 'sb_publishable_-sFmi0TkGbAwSmzLbXF4GA_t7-iCurd';
@@ -1287,7 +1351,7 @@ function duotuneReceive(payload){
       break;
   }
 }
-async function duotuneConnect({name,code,password}){
+async function duotuneConnect({name,code,verified,verification}){
   if(duotuneJoining) return;
   duotuneJoining=true;
   try{
@@ -1311,20 +1375,12 @@ async function duotuneConnect({name,code,password}){
     S.isHost=false;
     const roomCode=code ? duotuneRoomCode(code) : INVITE_ROOM_TOKEN;
     if(roomCode!==INVITE_ROOM_TOKEN) throw new Error('Could not join this room.');
-    if(!password || password!=='23') throw new Error('Incorrect password.');
-    let access=await duotuneSupabase.rpc('duotune_request_room_access',{p_room_code:roomCode,p_display_name:name,p_password:password});
-    if(access.error) throw new Error(access.error.message);
-    if(access.data?.status==='setup_required'){
-      const setup=await duotuneSupabase.rpc('duotune_set_room_password',{p_room_code:roomCode,p_password:password});
-      if(setup.error) throw new Error('Only the existing room admin can set the shared password. '+setup.error.message);
-      access=await duotuneSupabase.rpc('duotune_request_room_access',{p_room_code:roomCode,p_display_name:name,p_password:password});
-      if(access.error) throw new Error(access.error.message);
-    }
-    if(access.data?.status==='pending') throw new Error('Access request sent. Waiting for the room admin to approve you.');
-    if(access.data?.status!=='approved') throw new Error(access.data?.message||'Room access was not approved.');
-    S.isHost=!!access.data?.is_admin;
+    if(!verified||!verification?.success) throw new Error('Please complete email phrase verification first.');
+    if(verification.userId&&verification.userId!==S.authUserId) throw new Error('Verified identity does not match this device session.');
+    if(verification.name&&verification.name.toLowerCase()!==name.toLowerCase()) throw new Error('Verified name does not match this login.');
+    S.isHost=!!verification.isAdmin;
     S.code=roomCode;
-    S.roomId=access.data?.room_id||null;
+    S.roomId=verification.roomId||null;
     duotunePresenceKey=(crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`);
     duotuneChannel=duotuneSupabase.channel(`duotune:${roomCode}`,{
       config:{presence:{key:duotunePresenceKey},broadcast:{self:false}}
