@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23fbe4ea'/%3E%3Ccircle cx='12.5' cy='16' r='8' fill='%23e48aa6'/%3E%3Ccircle cx='19.5' cy='16' r='8' fill='%231f1519' fill-opacity='.9'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============ TOKENS ============ */
 :root{
@@ -339,6 +339,111 @@ a.row{color:inherit;text-decoration:none}
 .field{position:relative;margin-bottom:10px;text-align:left}
 .field .i{position:absolute;left:17px;top:50%;transform:translateY(-50%);width:20px;height:20px;color:var(--rose2);opacity:.85;pointer-events:none}
 .field .f{margin:0;height:56px;padding:0 18px 0 49px}
+/* ===== v3 polish ===== */
+:root{--e2:cubic-bezier(.32,.72,0,1);
+  --sh1:0 1px 2px rgba(150,70,100,.10),0 4px 12px -4px rgba(150,70,100,.18);
+  --sh2:0 2px 4px rgba(150,70,100,.08),0 10px 24px -8px rgba(150,70,100,.30),0 22px 44px -22px rgba(150,70,100,.30);
+  --sh3:0 4px 8px rgba(120,50,80,.10),0 18px 40px -10px rgba(150,60,95,.42),0 40px 80px -30px rgba(150,60,95,.45)}
+html,body{position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none}
+#app{position:fixed;left:50%;top:var(--vvt,0px);transform:translateX(-50%);height:var(--vvh,100dvh);transition:none}
+button{transition:transform .25s var(--e2),background .25s,box-shadow .3s,opacity .25s}
+button:active{transform:scale(.97)}
+.view{transition:opacity .5s var(--e2),transform .6s var(--e2)}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* shadows */
+.tabbar{box-shadow:0 -14px 36px -18px rgba(150,70,100,.5),inset 0 1px 0 rgba(255,255,255,.7);border-top:0;transition:height .35s var(--e2),padding .35s var(--e2),opacity .25s}
+.tab{transition:background .35s var(--e2),color .3s,box-shadow .35s var(--e2),transform .25s var(--e2)}
+.tab.active{background:linear-gradient(180deg,#fff,rgba(255,236,242,.9));box-shadow:var(--sh1),inset 0 1px 0 #fff}
+.pill{box-shadow:var(--sh1),inset 0 1px 0 rgba(255,255,255,.8)}
+.art{box-shadow:var(--sh3);transition:transform .7s var(--e2),box-shadow .7s}
+.playing .art{box-shadow:0 6px 10px rgba(120,50,80,.12),0 26px 50px -12px rgba(150,60,95,.55),0 50px 90px -34px rgba(150,60,95,.5)}
+.dock{box-shadow:0 -16px 40px -18px rgba(150,70,100,.5),inset 0 1px 0 rgba(255,255,255,.75)}
+.row{background:rgba(255,255,255,.55);box-shadow:var(--sh1),inset 0 1px 0 rgba(255,255,255,.8);padding:8px 10px;margin-bottom:7px;border-radius:16px;animation:rise .5s var(--e2) both}
+.row:nth-child(2){animation-delay:.04s}.row:nth-child(3){animation-delay:.08s}.row:nth-child(4){animation-delay:.12s}.row:nth-child(5){animation-delay:.16s}.row:nth-child(n+6){animation-delay:.2s}
+.row.cur{background:rgba(255,255,255,.82);box-shadow:var(--sh2)}
+.pl-ico{box-shadow:var(--sh1)}
+.ib,.plus{box-shadow:var(--sh1);background:rgba(255,255,255,.7)}
+.seg{box-shadow:inset 0 1px 3px rgba(150,70,100,.18)}
+.seg button{transition:all .35s var(--e2)}
+.seg button.on{box-shadow:var(--sh1)}
+.sheet{box-shadow:0 -4px 10px rgba(120,50,80,.06),0 -24px 60px -12px rgba(150,60,95,.5);transition:transform .55s var(--e2)}
+.sheet-bg{transition:opacity .45s var(--e2);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.banner{box-shadow:var(--sh3);transition:transform .55s var(--e2),opacity .4s}
+.banner .av{width:40px;height:40px;font-size:15px;box-shadow:0 0 0 2px #fff,0 6px 14px -4px rgba(191,106,133,.6);overflow:hidden}
+.banner .av::after{display:none}
+.primary{box-shadow:0 2px 4px rgba(31,21,25,.18),0 14px 28px -10px rgba(31,21,25,.55)}
+.toast{box-shadow:var(--sh3)}
+
+/* stats numerals */
+.stat b{font-family:"SF Pro Rounded",ui-rounded,var(--sans);font-style:normal;font-weight:200;font-size:48px;letter-spacing:-.035em;font-variant-numeric:tabular-nums;
+  background:linear-gradient(170deg,#eaa3b9,#b4587a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;filter:drop-shadow(0 6px 10px rgba(191,106,133,.25))}
+.stat b small{font-family:inherit;font-size:15px;font-weight:300;letter-spacing:0;margin:0 7px 0 3px}
+.wk u{box-shadow:0 4px 8px -3px rgba(191,106,133,.5);transition:height .8s var(--e2)}
+
+/* login steps */
+.hint{margin:2px 0 10px;text-align:center;font-size:13px;color:var(--rose2);font-weight:500}
+.subrow{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px}
+.subrow.hidden,.hint.hidden{display:none}
+.linkbtn{font-size:13.5px;font-weight:600;color:var(--rose2);padding:8px 16px;border-radius:16px;background:rgba(255,255,255,.55);box-shadow:var(--sh1),inset 0 1px 0 rgba(255,255,255,.8)}
+.linkbtn:active{background:rgba(255,255,255,.9)}
+.dotsep{width:4px;height:4px;border-radius:50%;background:var(--rose)}
+#phraseField:not(.hidden),.subrow:not(.hidden),.hint:not(.hidden){animation:rise .55s var(--e2) both}
+#passwordField:not(.hidden){animation:rise .5s var(--e2) both}
+#phraseInput{letter-spacing:.06em;font-weight:600}
+#nameInput[readonly]{opacity:.65}
+
+/* chat header + lyrics-mode chat */
+.msgwrap{display:flex;flex-direction:column}
+.dock.open .msgwrap{height:min(34dvh,280px)}
+.msgs{flex:1;min-height:0;height:auto}
+.chat-head{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0 8px;max-height:92px;overflow:hidden;transition:max-height .4s var(--e2),opacity .3s,padding .4s var(--e2)}
+.av.ch{width:48px;height:48px;font-size:19px;box-shadow:0 0 0 2.5px #fff,0 8px 18px -4px rgba(191,106,133,.6);overflow:visible}
+.av.ch::after{width:12px;height:12px;right:0;bottom:0;border-width:2px}
+.ch-t{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.ch-t b{font-size:13.5px;font-weight:650;letter-spacing:-.01em}
+.ch-t span{font-size:11px;color:var(--rose2);min-height:12px}
+.ch-clear{position:absolute;right:0;top:0;width:32px;height:32px;opacity:.8}
+.ch-clear .i{width:16px;height:16px}
+body.kb .chat-head{max-height:0;opacity:0;padding:0}
+body.kb .tabbar{height:0;padding:0;opacity:0;pointer-events:none;overflow:hidden;border:0;box-shadow:none}
+body.kb .dock.open .msgwrap{height:clamp(96px,calc(var(--vvh,100dvh)*.3),170px)}
+body.kb .dock{padding-bottom:6px}
+.m.pressed .mb{transform:scale(.95);filter:brightness(.9)}
+.m .mb{transition:transform .25s var(--e2),filter .25s}
+.m{animation:mrise .5s var(--e2) both}
+@keyframes mrise{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+
+/* Apple-Music style lyrics */
+.lyrbg{position:absolute;inset:0;opacity:0;transition:opacity .9s var(--e2);pointer-events:none;
+  background:radial-gradient(120% 70% at 50% 0%,rgba(255,170,195,.35),transparent 60%),linear-gradient(175deg,#b5506f 0%,#9b3f5d 52%,#6f2842 100%)}
+body.lyr .lyrbg{opacity:1}
+body.lyr .artglow.on{opacity:.38;mix-blend-mode:soft-light}
+body.lyr .veil{opacity:0;transition:opacity .6s}
+body.lyr .l-head .title,body.lyr .l-head .artist{color:#fff}
+body.lyr .l-head .artist{opacity:.7}
+body.lyr .line{--c1:rgba(255,255,255,.4);--c0:rgba(255,255,255,.4);font-weight:700;
+  transition:transform .9s var(--e2) calc(var(--k,0)*26ms),opacity .8s var(--e2),filter .9s var(--e2),--c1 .8s}
+body.lyr .line.past{--w:108%}
+body.lyr .line.active{--c1:#fff;--c0:rgba(255,255,255,.4);transform:scale(1.015);
+  filter:blur(0) drop-shadow(0 0 6px rgba(255,255,255,.7)) drop-shadow(0 0 20px rgba(255,255,255,.55)) drop-shadow(0 0 44px rgba(255,214,230,.5));animation:lglowW 3s ease-in-out .8s infinite alternate}
+@keyframes lglowW{from{filter:blur(0) drop-shadow(0 0 5px rgba(255,255,255,.55)) drop-shadow(0 0 16px rgba(255,255,255,.4)) drop-shadow(0 0 36px rgba(255,214,230,.4))}to{filter:blur(0) drop-shadow(0 0 8px rgba(255,255,255,.85)) drop-shadow(0 0 26px rgba(255,255,255,.65)) drop-shadow(0 0 54px rgba(255,214,230,.6))}}
+body.lyr .line.picked{--c1:#fff;--c0:#fff}
+body.lyr #lyricsSource,body.lyr .lyr-empty{color:rgba(255,255,255,.55)}
+body.lyr .dock{background:rgba(88,30,52,.55);box-shadow:0 -16px 40px -18px rgba(40,10,25,.6),inset 0 1px 0 rgba(255,255,255,.14)}
+body.lyr .grab::after{background:rgba(255,255,255,.35)}
+body.lyr .tabbar{background:rgba(88,30,52,.6);box-shadow:0 -14px 36px -18px rgba(40,10,25,.6),inset 0 1px 0 rgba(255,255,255,.12)}
+body.lyr .tab{color:rgba(255,255,255,.6)}
+body.lyr .tab.active{background:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 18px -8px rgba(0,0,0,.4)}
+body.lyr .ch-t b{color:#fff}body.lyr .ch-t span{color:#ffd6e3}
+body.lyr .ch-clear{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
+body.lyr .m.her .mb{background:rgba(255,255,255,.92);color:var(--ink)}
+body.lyr .mq{color:#ffd6e3;border-color:rgba(255,255,255,.5)}
+body.lyr .chat-form input{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.2);color:#fff}
+body.lyr .chat-form input::placeholder{color:rgba(255,255,255,.55)}
+body.lyr .reacts button{background:rgba(255,255,255,.14)}
+body.lyr .pill{background:rgba(255,255,255,.18);color:#fff}
+@media(prefers-reduced-motion:reduce){body.lyr .line.active{animation:none}}
 </style>
 </head>
 <body>
@@ -374,7 +479,7 @@ a.row{color:inherit;text-decoration:none}
 </svg>
 
 <div id="app">
-  <div class="bg"><div class="artglow" id="artglow"></div><div class="veil"></div><div class="blob a"></div><div class="blob b"></div><div class="blob c"></div><div class="grain"></div></div>
+  <div class="bg"><div class="artglow" id="artglow"></div><div class="veil"></div><div class="lyrbg"></div><div class="blob a"></div><div class="blob b"></div><div class="blob c"></div><div class="grain"></div></div>
 
   <!-- =============== WELCOME =============== -->
   <section class="screen" id="welcome">
@@ -396,10 +501,11 @@ a.row{color:inherit;text-decoration:none}
       <div class="field"><svg class="i"><use href="#i-user"/></svg><input class="f" id="nameInput" placeholder="Your name" maxlength="20" aria-label="Your name"></div>
       <input id="roomCodeInput" type="hidden" value="">
       <div class="field" id="passwordField"><svg class="i"><use href="#i-lock"/></svg><input class="f" id="roomPasswordInput" type="password" placeholder="Password" maxlength="8" aria-label="Password" autocomplete="current-password" required></div>
-      <div class="field hidden" id="phraseField"><svg class="i"><use href="#i-heart"/></svg><input class="f" id="phraseInput" type="text" placeholder="Your email phrase" maxlength="80" aria-label="Email phrase" autocomplete="one-time-code"></div>
+      <div class="field hidden" id="phraseField"><svg class="i"><use href="#i-heart"/></svg><input class="f" id="phraseInput" type="text" placeholder="Code from your email" maxlength="80" aria-label="Email code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false"></div>
+      <p class="hint hidden" id="loginHint">Code sent to your email</p>
       <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-      <button class="primary" id="goBtn" type="submit"><span id="goLabel">Send my phrase</span><svg class="i"><use href="#i-arrow"/></svg></button>
-      <button type="button" id="resendPhraseBtn" class="hidden" style="margin-top:10px;background:none;border:0;color:var(--rose2);font:inherit;text-decoration:underline" >Send a fresh phrase</button>
+      <button class="primary" id="goBtn" type="submit"><span id="goLabel">Continue</span><svg class="i"><use href="#i-arrow"/></svg></button>
+      <div class="subrow hidden" id="phraseActions"><button type="button" id="backStepBtn" class="linkbtn">Back</button><span class="dotsep"></span><button type="button" id="resendPhraseBtn" class="linkbtn">Send a fresh code</button></div>
     </form>
   </section>
 
@@ -450,7 +556,7 @@ a.row{color:inherit;text-decoration:none}
         <div class="dock" id="dock">
           <div id="floats" class="hidden"></div>
           <button class="grab" id="grab" aria-label="Show conversation"></button>
-          <div class="msgwrap"><div class="msgs" id="msgs"></div></div>
+          <div class="msgwrap"><div class="chat-head"><div class="av her ch" id="chatAv">♡</div><div class="ch-t"><b id="chatName">Her</b><span id="chatState"></span></div><button type="button" class="ib ch-clear" id="chatClearBtn" aria-label="Clear conversation"><svg class="i"><use href="#i-trash"/></svg></button></div><div class="msgs" id="msgs"></div></div>
           <div class="peek" id="peek"></div>
           <div class="quote hidden" id="quote"><span id="quoteText"></span><button id="quoteX" aria-label="Remove quote"><svg class="i"><use href="#i-x"/></svg></button></div>
           <div class="reacts" id="reacts"></div>
@@ -520,7 +626,6 @@ a.row{color:inherit;text-decoration:none}
         <div class="who"><span class="av me on" id="shMeAv">K</span><span id="shMeName">You</span><small>You</small></div>
     <div class="who"><span class="av her" id="shHerAv">♡</span><span id="shHerName">Waiting</span><small id="shHerState">Not here yet</small></div>
     <div class="code-box"><strong id="shCode">—</strong><button id="copyCode" aria-label="Copy invite link"><svg class="i"><use href="#i-copy"/></svg></button></div>
-    <button class="leave-btn hidden" id="reviewRequestsBtn">Review access requests</button>
     <button class="leave-btn" id="leaveBtn">Leave room</button>
   </div>
   <div class="sheet-bg" id="dlgBg"></div>
@@ -638,15 +743,25 @@ function frame(){
 }
 function kickFrame(){ if(!_raf&&S.playing)_raf=requestAnimationFrame(frame); }
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ S.pos=estPos(); S._tAt=performance.now(); kickFrame(); } /* Never pause or reload on backgrounding; browser/YouTube may still suspend playback. */ });
-// Mobile viewport tracking: keep the player fitted to Chrome's changing viewport.
+/* Viewport + keyboard: one rAF-throttled handler drives CSS variables only (no inline height/top fights). */
 (function(){
-  const setViewport=()=>{
-    const vv=window.visualViewport;
-    const keyboardLikely=vv && (window.innerHeight-vv.height)>140;
-    if(!keyboardLikely){const h=vv?.height||window.innerHeight;document.documentElement.style.setProperty('--duo-vh',Math.round(h)+'px');}
+  const root=document.documentElement, vv=window.visualViewport;
+  let maxH=Math.max(window.innerHeight,vv?vv.height:0), raf=0, lastKb=null;
+  const apply=()=>{
+    raf=0;
+    const h=vv?vv.height:window.innerHeight, top=vv?vv.offsetTop:0;
+    if(h>maxH-60)maxH=Math.max(maxH,h);
+    const kb=h<maxH-120;
+    root.style.setProperty('--vvh',Math.round(h)+'px');
+    root.style.setProperty('--vvt',Math.round(top)+'px');
+    if(kb!==lastKb){ lastKb=kb; document.body.classList.toggle('kb',kb);
+      if(kb)setTimeout(()=>{const l=document.getElementById('msgs'); if(l)l.scrollTop=l.scrollHeight;},330); }
   };
-  setViewport();window.addEventListener('resize',setViewport,{passive:true});
-  window.visualViewport?.addEventListener('resize',setViewport,{passive:true});
+  const sched=()=>{ if(!raf)raf=requestAnimationFrame(apply); };
+  (vv||window).addEventListener('resize',sched,{passive:true});
+  if(vv)vv.addEventListener('scroll',()=>{ window.scrollTo(0,0); sched(); },{passive:true});
+  window.addEventListener('orientationchange',()=>setTimeout(()=>{maxH=vv?vv.height:window.innerHeight;sched();},400));
+  apply();
 })();
 
 
@@ -721,7 +836,7 @@ function mergedHistory(){
 }
 function renderFavSel(){
   const el=$('#fsel'); if(!el)return;
-  el.innerHTML=[['all','All'],['me',S.me.name||'You'],['her',S.her.name||'Her']].map(([k,l])=>`<button type="button" data-f="${k}" class="${S.favFilter===k?'on':''}">${esc(l)}</button>`).join('');
+  el.innerHTML=[['all','All'],['me',S.me.name||'You'],['her',partnerName()]].map(([k,l])=>`<button type="button" data-f="${k}" class="${S.favFilter===k?'on':''}">${esc(l)}</button>`).join('');
 }
 const heartIco=c=>`<svg class="i" style="color:${c};--hf:${c}"><use href="#i-heart"/></svg>`;
 function renderFavs(){
@@ -885,7 +1000,7 @@ function updateLine(p=estPos()){
     const els = S._lineEls || (S._lineEls = $$('#lyrics .line'));
     els.forEach((el,i) => {
       const d = a<0 ? 4 : Math.min(Math.abs(i-a),6);
-      el.style.setProperty('--d', d);
+      el.style.setProperty('--d', d); el.style.setProperty('--k', Math.min(Math.max(0,i-a),7));
       el.classList.toggle('active', i===a);
       el.classList.toggle('past', a>=0 && i<a);
       if (i!==a) el.style.removeProperty('--w');
@@ -906,9 +1021,15 @@ function scrollToLine(instant){
   if (S.view !== 'lyrics' && !instant) return;
   if (Date.now() < S.userScrollUntil && !instant) return;
   const box = $('#lyrics'), el = $('#lyrics .line.active') || $('#lyrics .line'); if (!el) return;
-  box.scrollTo({top: el.offsetTop - box.clientHeight*.28, behavior: instant ? 'auto' : 'smooth'});
+  const target = Math.max(0, el.offsetTop - box.clientHeight*.28);
+  if (instant){ cancelAnimationFrame(S._sa); box.scrollTop = target; return; }
+  /* eased, slightly long glide so the lyrics "raise" like Apple Music */
+  cancelAnimationFrame(S._sa);
+  const from = box.scrollTop, d = target - from; if (Math.abs(d) < 1) return; const t0 = performance.now(), dur = 780;
+  const step = now => { const k = Math.min(1,(now-t0)/dur), e = 1-Math.pow(1-k,4); box.scrollTop = from + d*e; if (k<1) S._sa = requestAnimationFrame(step); };
+  S._sa = requestAnimationFrame(step);
 }
-['touchstart','wheel'].forEach(ev => $('#lyrics').addEventListener(ev, () => S.userScrollUntil = Date.now()+3500, {passive:true}));
+['touchstart','wheel'].forEach(ev => $('#lyrics').addEventListener(ev, () => { S.userScrollUntil = Date.now()+3500; cancelAnimationFrame(S._sa); }, {passive:true}));
 $('#lyrics').addEventListener('click', e => {
   const el = e.target.closest('.line'); if (!el) return;
   $$('#lyrics .line.picked').forEach(x=>x.classList.remove('picked'));
@@ -921,7 +1042,7 @@ $('#quoteX').onclick = clearQuote;
 /* ==========================================================================
    CHAT + REACTIONS
    ========================================================================== */
-const msgHTML = m => `<div class="m ${m.by}">${m.quote?`<div class="mq">“${esc(m.quote)}”</div>`:''}<div class="mb">${esc(m.text)}</div></div>`;
+const msgHTML = m => `<div class="m ${m.by}" data-cid="${esc(m.cid||'')}" data-id="${esc(m.id||'')}">${m.quote?`<div class="mq">“${esc(m.quote)}”</div>`:''}<div class="mb">${esc(m.text)}</div></div>`;
 function pushMessage(m){
   S.msgs.push(m);
   const list = $('#msgs'); list.insertAdjacentHTML('beforeend', msgHTML(m)); list.scrollTop = list.scrollHeight;
@@ -929,9 +1050,9 @@ function pushMessage(m){
   while (pk.children.length > 3) pk.firstElementChild.remove();
 }
 DuoTune.ui.receiveMessage = m => {
-  pushMessage({by: m.mine ? 'me' : 'her', text:m.text, quote:m.quote||null});
+  pushMessage({by: m.mine ? 'me' : 'her', text:m.text, quote:m.quote||null, cid:m.cid||'', id:m.id||''});
   if (m.silent || m.mine) return;                       /* history load / own message: no popup, no dot */
-  if (S.view !== 'lyrics') { showBanner(S.her.name || 'Her', m.text); setUnread(true); }
+  if (S.view !== 'lyrics') { showBanner(partnerName(), m.text); setUnread(true); }
 };
 const setUnread = on => $('#unreadDot').classList.toggle('hidden', !on);
 
@@ -940,8 +1061,9 @@ $('#chatForm').onsubmit = e => {
   e.preventDefault();
   const text = $('#chatInput').value.trim(); if (!text) return;
   const quote = S.quote;
-  DuoTune.emit('chat:send', {text, quote});
-  pushMessage({by:'me', text, quote});
+  const cid = 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  DuoTune.emit('chat:send', {text, quote, cid});
+  pushMessage({by:'me', text, quote, cid});
   $('#chatInput').value = ''; $('#sendBtn').disabled = true; clearQuote();
   if (MOCK && S.her.online) setTimeout(()=>DuoTune.ui.receiveMessage({text:HER_REPLIES[Math.random()*HER_REPLIES.length|0]}), 2200);
 };
@@ -954,37 +1076,18 @@ function setChatOpen(on){
 $('#grab').onclick = () => setChatOpen(!S.chatOpen);
 
 function duotuneKeepChatAboveKeyboard(){
-  const input=$('#chatInput');
-  if(!input)return;
-  input.addEventListener('focus',()=>{
-    setChatOpen(true);
-    setTimeout(()=>{
-      input.scrollIntoView({block:'nearest',behavior:'smooth'});
-      const list=$('#msgs'); if(list)list.scrollTop=list.scrollHeight;
-    },180);
-  });
-  if(window.visualViewport){
-    const update=()=>{
-      const app=$('#app');
-      if(!app)return;
-      const vv=window.visualViewport;
-      app.style.height=Math.max(320,vv.height)+'px';
-      app.style.top=Math.max(0,vv.offsetTop)+'px';
-      document.body.classList.toggle('duo-keyboard-open',vv.height<window.innerHeight-120);
-      if(S.chatOpen){
-        const list=$('#msgs'); if(list)list.scrollTop=list.scrollHeight;
-        requestAnimationFrame(()=>input.scrollIntoView({block:'nearest'}));
-      }
-    };
-    window.visualViewport.addEventListener('resize',update);
-    window.visualViewport.addEventListener('scroll',update);
-  }
+  const input=$('#chatInput'); if(!input)return;
+  input.addEventListener('focus',()=>{ if(!S.chatOpen)setChatOpen(true); setTimeout(()=>{const l=$('#msgs'); if(l)l.scrollTop=l.scrollHeight;},340); });
 }
 duotuneKeepChatAboveKeyboard();
 
 
-const REACTIONS = ['❤️','🥹','✨','🎶','😭'];
-$('#reacts').innerHTML = REACTIONS.map(r=>`<button type="button" data-r="${r}" aria-label="React ${r}">${r}</button>`).join('');
+const isPooja=()=>/^pooja$/i.test(S.me.name||'');
+const partnerPron=()=>isPooja()?'him':'her';
+const partnerName=()=>S.her.name||(isPooja()?'Kiran':'Pooja');
+const reactionSet=()=>['🤍',isPooja()?'💃':'🕺','✨','🤩','🎶'];
+function renderReactions(){ $('#reacts').innerHTML = reactionSet().map(r=>`<button type="button" data-r="${r}" aria-label="React ${r}">${r}</button>`).join(''); }
+renderReactions();
 $('#reacts').onclick = e => { const b = e.target.closest('button'); if(!b) return; DuoTune.emit('reaction:send',{emoji:b.dataset.r}); floatReaction(b.dataset.r, true); };
 function floatReaction(emoji, mine){
   const el = document.createElement('div'); el.className = 'rx'; el.textContent = emoji;
@@ -994,11 +1097,45 @@ function floatReaction(emoji, mine){
 }
 DuoTune.ui.receiveReaction = emoji => { console.info('[DUOTUNE] reaction received', emoji); floatReaction(emoji, false); };
 
+/* ---- chat: her photo header, clear, delete own message (long-press) ---- */
+function renderChatHead(){
+  const av=$('#chatAv'); if(!av)return; const url=S.herAvatar, n=partnerName();
+  av.textContent=url?'':(n[0]||'♡').toUpperCase();
+  av.style.backgroundImage=url?`url("${url}")`:''; av.style.backgroundSize='cover'; av.style.backgroundPosition='center';
+  av.classList.toggle('on',!!S.her.online);
+  $('#chatName').textContent=n; $('#chatState').textContent=S.her.online?'Online':'';
+}
+function renderChatLists(){ $('#msgs').innerHTML=S.msgs.map(msgHTML).join(''); $('#peek').innerHTML=S.msgs.slice(-3).map(msgHTML).join(''); $('#msgs').scrollTop=$('#msgs').scrollHeight; }
+DuoTune.ui.clearChat=()=>{ S.msgs=[]; $('#msgs').innerHTML=''; $('#peek').innerHTML=''; };
+DuoTune.ui.removeMessage=({cid,text,mine})=>{
+  let i=-1; if(cid)i=S.msgs.findIndex(m=>m.cid===cid);
+  if(i<0)for(let k=S.msgs.length-1;k>=0;k--){const m=S.msgs[k];if(m.text===text&&(m.by==='me')===!!mine){i=k;break;}}
+  if(i<0)return; S.msgs.splice(i,1); renderChatLists();
+};
+$('#chatClearBtn').onclick=async()=>{ if(await uiConfirm('Clear this conversation for both of you?','Clear chat'))DuoTune.emit('chat:clear',{}); };
+(function(){
+  let t=0,sx=0,sy=0;
+  const box=$('#msgs');
+  box.addEventListener('pointerdown',e=>{
+    const m=e.target.closest('.m.me'); if(!m)return; sx=e.clientX; sy=e.clientY;
+    t=setTimeout(async()=>{ t=0; m.classList.add('pressed');
+      const ok=await uiConfirm('Delete this message for both of you?','Delete'); m.classList.remove('pressed');
+      if(ok)DuoTune.emit('chat:delete',{cid:m.dataset.cid,id:m.dataset.id,text:m.querySelector('.mb').textContent});
+    },520);
+  });
+  const stop=()=>{if(t){clearTimeout(t);t=0;}};
+  box.addEventListener('pointerup',stop); box.addEventListener('pointercancel',stop); box.addEventListener('pointerleave',stop);
+  box.addEventListener('pointermove',e=>{ if(t&&(Math.abs(e.clientX-sx)>8||Math.abs(e.clientY-sy)>8))stop(); });
+})();
+
 /* new-message popup */
 let bannerTimer;
 function showBanner(name, text){
-  $('#banAv').textContent = (name[0]||'♡').toUpperCase(); $('#banName').textContent = name; $('#banText').textContent = text;
-  $('#banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(()=>$('#banner').classList.remove('show'), 4200);
+  const av=$('#banAv'), url=S.herAvatar;
+  av.textContent = url ? '' : (name[0]||'♡').toUpperCase();
+  av.style.backgroundImage = url ? `url("${url}")` : ''; av.style.backgroundSize='cover'; av.style.backgroundPosition='center';
+  $('#banName').textContent = name; $('#banText').textContent = text;
+  $('#banner').classList.add('show'); clearTimeout(bannerTimer); bannerTimer = setTimeout(()=>$('#banner').classList.remove('show'), 4600);
 }
 $('#banner').onclick = () => { $('#banner').classList.remove('show'); go('lyrics'); setChatOpen(true); };
 
@@ -1090,7 +1227,7 @@ $('#panePl').onclick=async e=>{
    NAVIGATION, PRESENCE, ROOM
    ========================================================================== */
 function go(v){
-  S.view = v;
+  S.view = v; document.body.classList.toggle('lyr', v==='lyrics');
   $$('.view').forEach(x=>x.classList.toggle('active', x.id==='v-'+v));
   $$('.tab').forEach(x=>x.classList.toggle('active', x.dataset.v===v));
   if (v==='lyrics'){ setUnread(false); setTimeout(()=>scrollToLine(true), 60); }
@@ -1129,10 +1266,10 @@ function renderPresence(){
   $('#shHerAv').classList.toggle('on', S.her.online);
   $('#shMeAv').classList.add('on');
   $('#shMeName').textContent = S.me.name;
-  $('#shHerName').textContent = S.her.name || 'Waiting for her';
-  $('#shHerState').textContent = S.her.online ? 'Here with you' : 'Not here yet';
-  $('#lblMine').textContent = (S.me.name ? S.me.name + '’s' : 'Your') + ' playlists'; $('#lblHer').textContent = (S.her.name ? S.her.name + '’s' : 'Her') + ' playlists';
-  $('#reviewRequestsBtn').classList.toggle('hidden', !S.isHost); renderFavSel();
+  $('#shHerName').textContent = S.her.online ? partnerName() : 'Waiting for '+partnerPron();
+  $('#shHerState').textContent = S.her.online ? 'Here with you' : '';
+  $('#lblMine').textContent = (S.me.name ? S.me.name + '’s' : 'Your') + ' playlists'; $('#lblHer').textContent = partnerName() + '’s playlists';
+  renderFavSel(); renderChatHead();
 }
 
 const sheet = on => { $('#sheet').classList.toggle('show', on); $('#sheetBg').classList.toggle('show', on); };
@@ -1140,24 +1277,12 @@ $('#pill').onclick = () => sheet(true);
 $('#sheetBg').onclick = () => sheet(false);
 $('#copyCode').onclick = async () => { const link=location.origin+location.pathname+'?room='+encodeURIComponent(S.code||INVITE_ROOM_TOKEN); try{await navigator.clipboard.writeText(link);toast('Invite link copied');}catch{prompt('Copy your invite link',link);} };
 $('#leaveBtn').onclick = () => { sheet(false); act('room:leave',{},leaveRoom); };
-$('#reviewRequestsBtn').onclick=async()=>{
-  if(!duotuneSupabase||!S.code)return;
-  const {data,error}=await duotuneSupabase.rpc('duotune_list_join_requests',{p_room_code:S.code});
-  if(error){toast(error.message);return;}
-  const pending=data||[];if(!pending.length){toast('No pending requests');return;}
-  for(const req of pending){
-    const approve=await uiConfirm(`${req.display_name} wants to join. Let them in?`,'Let them in');
-    const result=await duotuneSupabase.rpc('duotune_review_join_request',{p_request_id:req.id,p_approve:approve});
-    if(result.error)toast(result.error.message);
-  }
-  toast('Access requests reviewed');
-};
 
 let toastTimer;
 function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove('show'), Math.max(2200, Math.min(6000, String(t).length*60))); }
 
 DuoTune.ui.enterRoom = ({name, code}) => {
-  S.me.name = name; S.code = code; favLoad(); statsLoad();
+  S.me.name = name; S.code = code; favLoad(); statsLoad(); renderReactions();
   $('#shCode').textContent = ''; $('#footCode').textContent = '';
   $('#welcome').classList.add('leave'); setTimeout(()=>$('#welcome').classList.add('hidden'), 450);
   $('#room').classList.remove('hidden'); requestAnimationFrame(()=>requestAnimationFrame(()=>$('#room').classList.add('in')));
@@ -1167,7 +1292,7 @@ DuoTune.ui.enterRoom = ({name, code}) => {
 function leaveRoom(){
   clearInterval(tick); DuoTune.ui.setPlaying(false); S.msgs=[]; $('#msgs').innerHTML=''; $('#floats').innerHTML=''; $('#peek').innerHTML='';
   S.queue=[]; S.index=-1; S.her={name:'',online:false}; DuoTune.ui.setNowPlaying(null); renderQueue();
-  $('#room').classList.remove('in'); setTimeout(()=>$('#room').classList.add('hidden'), 500);
+  document.body.classList.remove('lyr','kb'); $('#room').classList.remove('in'); setTimeout(()=>$('#room').classList.add('hidden'), 500);
   $('#welcome').classList.remove('hidden'); requestAnimationFrame(()=>$('#welcome').classList.remove('leave'));
 }
 
@@ -1207,25 +1332,25 @@ function resetPhraseStep(){
   duotuneLoginChallengeId=null;duotuneLoginName=null;
   $('#phraseField').classList.add('hidden');$('#passwordField').classList.remove('hidden');
   $('#phraseInput').value='';$('#roomPasswordInput').value='';
-  $('#goLabel').textContent='Send my phrase';$('#resendPhraseBtn').classList.add('hidden');
+  $('#goLabel').textContent='Continue';$('#phraseActions').classList.add('hidden');loginStep(1);
 }
 async function duotuneSendLoginPhrase(name,password){
   await duotunePrepareAuth();
   const {data,error}=await duotuneSupabase.functions.invoke('duotune-login',{body:{action:'send',name,pin:password}});
-  if(error) throw new Error(data?.error||error.message||'Could not send your email phrase.');
-  if(!data?.success) throw new Error(data?.error||data?.message||'Could not send your email phrase.');
+  if(error) throw new Error(data?.error||error.message||'Could not send the code.');
+  if(!data?.success) throw new Error(data?.error||data?.message||'Could not send the code.');
   const id=data.challengeId||data.challenge_id||data.id;
-  if(!id) throw new Error('The mail server did not return a challenge ID. Check the deployed DUOTUNE login function.');
+  if(!id) throw new Error('The mail server did not return a challenge ID. Check the login function.');
   duotuneLoginChallengeId=id;duotuneLoginName=name;
   $('#passwordField').classList.add('hidden');$('#phraseField').classList.remove('hidden');
-  $('#phraseInput').focus();$('#goLabel').textContent='Verify & enter';$('#resendPhraseBtn').classList.remove('hidden');
-  toast('Phrase sent to your registered email. Check your inbox!');
+  $('#phraseInput').focus();$('#goLabel').textContent='Let’s Listen!';$('#phraseActions').classList.remove('hidden');loginStep(2);
+  toast('Code sent to your email ♡');
 }
 async function duotuneVerifyLoginPhrase(phrase){
   await duotunePrepareAuth();
   const {data,error}=await duotuneSupabase.functions.invoke('duotune-login',{body:{action:'verify',name:duotuneLoginName,challengeId:duotuneLoginChallengeId,phrase}});
-  if(error) throw new Error(data?.error||error.message||'Phrase verification failed.');
-  if(!data?.success) throw new Error(data?.error||data?.message||'That phrase is not correct.');
+  if(error) throw new Error(data?.error||error.message||'Could not verify the code.');
+  if(!data?.success) throw new Error(data?.error||data?.message||'That code is not correct.');
   if(data.userId&&data.userId!==S.authUserId) throw new Error('This verification belongs to a different device session.');
   const name=duotuneLoginName;
   if(S.avatar)store.set('duotune_avatar_self',S.avatar);
@@ -1241,20 +1366,25 @@ $('#welcomeForm').onsubmit=async e=>{
     if(password!=='5'){toast('Incorrect password');$('#roomPasswordInput').focus();return;}
     const fixedName=name.toLowerCase()==='kiran'?'Kiran':'Pooja';
     try{ $('#goBtn').disabled=true; await duotuneSendLoginPhrase(fixedName,password); }
-    catch(err){console.error('[DUOTUNE] Phrase send failed',err);toast(err.message||'Could not send phrase');}
+    catch(err){console.error('[DUOTUNE] Phrase send failed',err);toast(err.message||'Could not send the code');}
     finally{$('#goBtn').disabled=false;}
     return;
   }
   const phrase=$('#phraseInput').value.trim();
-  if(!phrase){toast('Enter the phrase sent to your email');$('#phraseInput').focus();return;}
+  if(!phrase){toast('Enter the code from your email');$('#phraseInput').focus();return;}
   try{ $('#goBtn').disabled=true; await duotuneVerifyLoginPhrase(phrase); }
-  catch(err){console.error('[DUOTUNE] Phrase verification failed',err);toast(err.message||'Could not verify phrase');}
+  catch(err){console.error('[DUOTUNE] Phrase verification failed',err);toast(err.message||'Could not verify the code');}
   finally{$('#goBtn').disabled=false;}
 };
+function loginStep(n){
+  $('#welcomeForm').dataset.step=n; $('#nameInput').readOnly=(n===2);
+  $('#loginHint').classList.toggle('hidden',n!==2);
+}
+$('#backStepBtn').onclick=()=>resetPhraseStep();
 $('#resendPhraseBtn').onclick=async()=>{
   if(!duotuneLoginName)return;
   try{ $('#resendPhraseBtn').disabled=true; await duotuneSendLoginPhrase(duotuneLoginName,'5'); }
-  catch(err){toast(err.message||'Could not resend phrase');}
+  catch(err){toast(err.message||'Could not resend the code');}
   finally{$('#resendPhraseBtn').disabled=false;}
 };
 
@@ -1301,7 +1431,7 @@ function duotuneReceive(payload){
   if(!payload || typeof payload!=='object') return;
   switch(payload.kind){
     case 'chat':
-      if(payload.sender!==duotunePresenceKey) DuoTune.ui.receiveMessage({text:payload.text,quote:payload.quote||null});
+      if(payload.sender!==duotunePresenceKey) DuoTune.ui.receiveMessage({text:payload.text,quote:payload.quote||null,cid:payload.cid||''});
       break;
     case 'reaction':
       DuoTune.ui.receiveReaction(payload.emoji);
@@ -1339,11 +1469,14 @@ function duotuneReceive(payload){
       /* UI-FIX: partner volume is ignored (volume is local only) */
       break;
     case 'fav': /* UI-FIX: favourites */
-      if(payload.sender!==duotunePresenceKey&&payload.song){const s=payload.song;S.favs.her=S.favs.her.filter(x=>x.id!==s.id);if(payload.liked)S.favs.her.unshift(s);favSave();renderFavs();if(payload.liked)toast((payload.by||'She')+' ♡ '+(s.title||'a song'));}
+      if(payload.sender!==duotunePresenceKey&&payload.song){const s=payload.song;S.favs.her=S.favs.her.filter(x=>x.id!==s.id);if(payload.liked)S.favs.her.unshift(s);favSave();renderFavs();if(payload.liked)toast((payload.by||partnerName())+' ♡ '+(s.title||'a song'));}
       break;
     case 'favs':
       if(payload.sender!==duotunePresenceKey&&Array.isArray(payload.list)){S.favs.her=payload.list;favSave();renderFavs();}
       break;
+    case 'chat-cleared': DuoTune.ui.clearChat(); break;                                  /* UI-FIX */
+    case 'chat-delete': DuoTune.ui.removeMessage({cid:payload.cid,text:payload.text,mine:false}); break;
+    case 'history-cleared': window.DUOTUNE_HISTORY=[]; if(S.stats){S.stats.hist=[];store.set(STATKEY(),JSON.stringify(S.stats));} renderFavs(); break;
     case 'playlist-refresh': duotuneLoadPlaylists(); break;
     case 'profile': if(payload.sender!==duotunePresenceKey){S.herAvatar=payload.avatar||null;if(payload.name)S.her.name=payload.name;renderPresence();} break;
     case 'presence-ping':
@@ -1375,7 +1508,7 @@ async function duotuneConnect({name,code,verified,verification}){
     S.isHost=false;
     const roomCode=code ? duotuneRoomCode(code) : INVITE_ROOM_TOKEN;
     if(roomCode!==INVITE_ROOM_TOKEN) throw new Error('Could not join this room.');
-    if(!verified||!verification?.success) throw new Error('Please complete email phrase verification first.');
+    if(!verified||!verification?.success) throw new Error('Please verify your email code first.');
     if(verification.userId&&verification.userId!==S.authUserId) throw new Error('Verified identity does not match this device session.');
     if(verification.name&&verification.name.toLowerCase()!==name.toLowerCase()) throw new Error('Verified name does not match this login.');
     S.isHost=!!verification.isAdmin;
@@ -1418,7 +1551,7 @@ async function duotuneConnect({name,code,verified,verification}){
       if(profileError) console.warn('[DUOTUNE] Profile record save failed:',profileError.message);
     }
     await duotuneBroadcast({kind:'presence-ping'});
-    toast('Welcome back, '+(S.me.name||'there')+'!');
+    toast(isPooja()?'Welcome, Pooja Cutie 🤗':(/^kiran$/i.test(S.me.name||'')?'Welcome Ra Kiran 🤙':'Welcome, '+(S.me.name||'there')+' ♡'));
     console.info('[DUOTUNE] Connected to',roomCode);
   }catch(error){
     console.error('[DUOTUNE] Connect error:',error);
@@ -1624,7 +1757,7 @@ async function duotuneLoadChat(){
   try{
     const {data,error}=await duotuneSupabase.from('duotune_chat').select('*').eq('room_code',S.code).order('created_at',{ascending:true}).limit(200);
     if(error) throw error;
-    (data||[]).forEach(row=>DuoTune.ui.receiveMessage({text:row.message,quote:row.quote||null,mine:row.user_id===S.authUserId,silent:true})); /* UI-FIX: old messages keep their side, no popups */
+    (data||[]).forEach(row=>DuoTune.ui.receiveMessage({text:row.message,quote:row.quote||null,mine:row.user_id===S.authUserId,silent:true,id:row.id})); /* UI-FIX: old messages keep their side, no popups */
   }catch(e){console.warn('[DUOTUNE] Chat persistence unavailable. Run the setup SQL.',e);}
 }
 
@@ -1784,10 +1917,28 @@ DuoTune.on('player:pause',p=>{DuoTune.ui.setPlaying(false);ytRemote(()=>ytPlayer
 DuoTune.on('player:seek',p=>{const seconds=Number(p?.seconds)||0;DuoTune.ui.setProgress(seconds,S.dur);ytRemote(()=>ytPlayer?.seekTo(seconds,true));duotuneBroadcast({kind:'player',action:'seek',seconds});});
 DuoTune.on('player:volume',p=>{ try{ if(ytReady&&ytPlayer)ytPlayer.setVolume(Math.max(0,Math.min(100,p.value))); }catch{} store.set('duotune_vol',String(p.value)); }); /* UI-FIX: volume is local only */
 DuoTune.on('chat:send',async p=>{
-  duotuneBroadcast({kind:'chat',by:S.me.name,sender:duotunePresenceKey,text:p.text,quote:p.quote||null});
+  duotuneBroadcast({kind:'chat',by:S.me.name,sender:duotunePresenceKey,text:p.text,quote:p.quote||null,cid:p.cid||''});
   if(duotuneSupabase && S.code){const {error}=await duotuneSupabase.from('duotune_chat').insert({room_code:S.code,user_id:S.authUserId,sender_name:S.me.name,message:p.text,quote:p.quote||null});if(error)console.warn('[DUOTUNE] Chat save failed. Run setup SQL.',error);}
 });
 DuoTune.on('reaction:send',p=>duotuneBroadcast({kind:'reaction',emoji:p.emoji}));
+/* UI-FIX: chat delete / clear (needs delete permission, see duotune-chat-delete.sql) */
+DuoTune.on('chat:clear',async()=>{
+  if(!duotuneSupabase||!S.code)return;
+  let {error}=await duotuneSupabase.rpc('duotune_clear_chat',{p_room_code:S.code});
+  if(error){ const r=await duotuneSupabase.from('duotune_chat').delete().eq('room_code',S.code); error=r.error; }
+  if(error){toast('Could not clear the chat yet. Delete permission is needed.');console.warn('[DUOTUNE] chat clear failed',error);return;}
+  DuoTune.ui.clearChat(); duotuneBroadcast({kind:'chat-cleared',sender:duotunePresenceKey}); toast('Conversation cleared');
+});
+DuoTune.on('chat:delete',async p=>{
+  DuoTune.ui.removeMessage({cid:p.cid,text:p.text,mine:true});
+  duotuneBroadcast({kind:'chat-delete',sender:duotunePresenceKey,cid:p.cid,text:p.text});
+  if(!duotuneSupabase||!S.code||!S.authUserId)return;
+  try{
+    let id=p.id;
+    if(!id){const {data}=await duotuneSupabase.from('duotune_chat').select('id').eq('room_code',S.code).eq('user_id',S.authUserId).eq('message',p.text).order('created_at',{ascending:false}).limit(1); id=data&&data[0]&&data[0].id;}
+    if(id){const {error}=await duotuneSupabase.from('duotune_chat').delete().eq('id',id).eq('user_id',S.authUserId); if(error)console.warn('[DUOTUNE] message delete failed',error);}
+  }catch(e){console.warn(e);}
+});
 DuoTune.on('queue:add',async p=>{
   const incomingUrl=String(p?.url||'').trim();
   const videoId=ytVideoId({videoId:p?.videoId,url:incomingUrl,id:p?.videoId||incomingUrl});
@@ -1922,4 +2073,3 @@ function runMock(){
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
-
