@@ -162,17 +162,11 @@ main{flex:1 1 auto;position:relative;min-height:0;overflow:hidden}
   -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 86%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 11%,#000 86%,transparent 100%)}
 #lyrics::-webkit-scrollbar{display:none}
 .pad{height:30%}.pad.b{height:70%}
-.line{display:block;width:fit-content;max-width:100%;font-size:28px;line-height:1.2;font-weight:700;letter-spacing:-.025em;padding:10px 0;cursor:pointer;
-  --c1:rgba(31,21,25,.4);--c0:rgba(31,21,25,.4);
-  background:linear-gradient(90deg,var(--c1) calc(var(--w) - 8%),var(--c0) calc(var(--w) + 8%));
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
-  transform-origin:left center;transform:scale(.92);opacity:max(.3,calc(1 - var(--d,4)*.26));
-  filter:blur(calc(var(--d,4)*.5px)) drop-shadow(0 0 0 rgba(255,255,255,0)) drop-shadow(0 0 0 rgba(240,110,155,0)) drop-shadow(0 0 0 rgba(240,110,155,0));
-  transition:transform .6s var(--ease),opacity .6s,filter .7s,--c1 .7s}
-.line.past{--w:108%}
-.line.active{--c1:var(--ink);--c0:rgba(31,21,25,.3);transform:scale(1);opacity:1;filter:blur(0) drop-shadow(0 0 5px rgba(255,255,255,.95)) drop-shadow(0 0 16px rgba(240,110,155,.8)) drop-shadow(0 0 36px rgba(240,110,155,.6));animation:lglow 2.6s ease-in-out .7s infinite alternate}
-@keyframes lglow{from{filter:blur(0) drop-shadow(0 0 4px rgba(255,255,255,.8)) drop-shadow(0 0 14px rgba(240,110,155,.65)) drop-shadow(0 0 30px rgba(240,110,155,.45))}to{filter:blur(0) drop-shadow(0 0 7px rgba(255,255,255,1)) drop-shadow(0 0 22px rgba(240,110,155,.95)) drop-shadow(0 0 48px rgba(240,110,155,.75))}}
-.line.picked{--c1:var(--rose2);--c0:var(--rose2);--w:108%}
+.line{display:block;width:fit-content;max-width:100%;font-size:28px;line-height:1.22;font-weight:700;letter-spacing:-.025em;padding:10px 0;cursor:pointer;color:rgba(255,255,255,.42);
+  transform-origin:left center;transform:scale(.93);opacity:max(.34,calc(1 - var(--d,4)*.2));
+  filter:blur(calc(var(--d,4)*.45px));
+  transition:transform .9s var(--e2,cubic-bezier(.32,.72,0,1)) calc(var(--k,0)*26ms),opacity .8s,filter .9s}
+.line.active{transform:scale(1);opacity:1;filter:blur(0)}
 .lyr-empty{font-family:var(--serif);font-style:italic;font-size:64px;color:rgba(191,106,133,.45);padding-top:14vh;text-align:center}
 #lyricsSource{padding:0 26px 6px;text-align:center;font-size:11px;color:var(--mut);flex:none}
 #lyricsSource:empty{display:none}
@@ -368,7 +362,7 @@ button:active{transform:scale(.97)}
 .seg button{transition:all .35s var(--e2)}
 .seg button.on{box-shadow:var(--sh1)}
 .sheet{box-shadow:0 -4px 10px rgba(120,50,80,.06),0 -24px 60px -12px rgba(150,60,95,.5);transition:transform .55s var(--e2)}
-.sheet-bg{transition:opacity .45s var(--e2);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.sheet-bg{transition:opacity .45s var(--e2)}
 .banner{box-shadow:var(--sh3);transition:transform .55s var(--e2),opacity .4s}
 .banner .av{width:40px;height:40px;font-size:15px;box-shadow:0 0 0 2px #fff,0 6px 14px -4px rgba(191,106,133,.6);overflow:hidden}
 .banner .av::after{display:none}
@@ -382,68 +376,108 @@ button:active{transform:scale(.97)}
 .wk u{box-shadow:0 4px 8px -3px rgba(191,106,133,.5);transition:height .8s var(--e2)}
 
 /* login steps */
-.hint{margin:2px 0 10px;text-align:center;font-size:13px;color:var(--rose2);font-weight:500}
 .subrow{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px}
-.subrow.hidden,.hint.hidden{display:none}
+.subrow.hidden{display:none}
 .linkbtn{font-size:13.5px;font-weight:600;color:var(--rose2);padding:8px 16px;border-radius:16px;background:rgba(255,255,255,.55);box-shadow:var(--sh1),inset 0 1px 0 rgba(255,255,255,.8)}
 .linkbtn:active{background:rgba(255,255,255,.9)}
 .dotsep{width:4px;height:4px;border-radius:50%;background:var(--rose)}
-#phraseField:not(.hidden),.subrow:not(.hidden),.hint:not(.hidden){animation:rise .55s var(--e2) both}
+#phraseField:not(.hidden),.subrow:not(.hidden){animation:rise .55s var(--e2) both}
 #passwordField:not(.hidden){animation:rise .5s var(--e2) both}
 #phraseInput{letter-spacing:.06em;font-weight:600}
 #nameInput[readonly]{opacity:.65}
 
-/* chat header + lyrics-mode chat */
+
+/* ---- invisible YouTube deck ---- */
+#duotune-audio-deck{position:fixed;left:0;top:0;opacity:0;clip-path:inset(50%);z-index:-1;pointer-events:none}
+#yt-status{display:none}
+
+/* ---- anti-flicker: no backdrop-filter inside fading views, promoted layers ---- */
+.view{will-change:opacity,transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.dock{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(255,249,245,.92);transition:background-color .6s var(--e2),box-shadow .6s}
+.tabbar{transition:height .35s var(--e2),padding .35s var(--e2),opacity .25s,background-color .6s var(--e2),box-shadow .6s}
+.tab{transition:background-color .5s var(--e2),color .5s,box-shadow .4s var(--e2),transform .25s var(--e2)}
+body.lyr .tabbar{backdrop-filter:none;-webkit-backdrop-filter:none}
+.veil,.lyrbg,.artglow{will-change:opacity}
+
+/* ---- ambient player backdrop ---- */
+.bg::before,.bg::after{content:"";position:absolute;width:90%;aspect-ratio:1;border-radius:50%;filter:blur(46px);opacity:.55;pointer-events:none;transition:opacity 1s}
+.bg::before{left:-30%;top:-8%;background:radial-gradient(circle,#ffc2d4,transparent 65%);animation:drift 22s ease-in-out infinite alternate}
+.bg::after{right:-35%;bottom:6%;background:radial-gradient(circle,#ff9fbb,transparent 65%);animation:drift 28s ease-in-out -9s infinite alternate-reverse}
+@keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(14%,10%,0) scale(1.18)}}
+body.lyr .bg::before,body.lyr .bg::after{opacity:.25}
+body:not(.lyr) .artglow.on{opacity:.8}
+.art{border-radius:24px}
+.art::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),inset 0 -40px 60px -40px rgba(120,30,70,.35);pointer-events:none}
+.title{letter-spacing:-.025em}
+
+/* ---- chat header + panel ---- */
 .msgwrap{display:flex;flex-direction:column}
-.dock.open .msgwrap{height:min(34dvh,280px)}
-.msgs{flex:1;min-height:0;height:auto}
-.chat-head{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:2px 0 8px;max-height:92px;overflow:hidden;transition:max-height .4s var(--e2),opacity .3s,padding .4s var(--e2)}
-.av.ch{width:48px;height:48px;font-size:19px;box-shadow:0 0 0 2.5px #fff,0 8px 18px -4px rgba(191,106,133,.6);overflow:visible}
-.av.ch::after{width:12px;height:12px;right:0;bottom:0;border-width:2px}
-.ch-t{display:flex;flex-direction:column;align-items:center;line-height:1.15}
-.ch-t b{font-size:13.5px;font-weight:650;letter-spacing:-.01em}
-.ch-t span{font-size:11px;color:var(--rose2);min-height:12px}
-.ch-clear{position:absolute;right:0;top:0;width:32px;height:32px;opacity:.8}
+.dock.open .msgwrap{height:min(31dvh,250px);transition:height .35s var(--e2)}
+.msgwrap{transition:height .35s var(--e2)}
+.msgs{flex:1;min-height:0;height:auto;gap:7px;padding:2px 4px 10px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.msgs *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.chat-head{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 0 7px;max-height:72px;overflow:hidden;transition:max-height .35s var(--e2),opacity .25s,padding .35s var(--e2)}
+.av.ch{width:38px;height:38px;font-size:16px;box-shadow:0 0 0 2px rgba(255,255,255,.9),0 6px 14px -4px rgba(40,10,25,.45);overflow:visible}
+.av.ch::after{width:10px;height:10px;right:-1px;bottom:-1px;border:2px solid #b24a6e}
+.ch-t{display:flex;align-items:center;gap:6px;line-height:1}
+.ch-t b{font-size:13px;font-weight:650;letter-spacing:-.01em}
+.ch-t span{font-size:11px;color:var(--rose2)}
+.ch-t span:empty{display:none}
+.ch-clear{position:absolute;right:0;top:0;width:32px;height:32px}
 .ch-clear .i{width:16px;height:16px}
 body.kb .chat-head{max-height:0;opacity:0;padding:0}
 body.kb .tabbar{height:0;padding:0;opacity:0;pointer-events:none;overflow:hidden;border:0;box-shadow:none}
-body.kb .dock.open .msgwrap{height:clamp(96px,calc(var(--vvh,100dvh)*.3),170px)}
+body.kb .dock.open .msgwrap{height:clamp(90px,calc(var(--vvh,100dvh)*.3),160px)}
 body.kb .dock{padding-bottom:6px}
-.m.pressed .mb{transform:scale(.95);filter:brightness(.9)}
-.m .mb{transition:transform .25s var(--e2),filter .25s}
-.m{animation:mrise .5s var(--e2) both}
+.m{max-width:80%;animation:mrise .5s var(--e2) both}
+.m .mb{font-size:15.5px;line-height:1.3;padding:9px 15px;transition:transform .25s var(--e2),filter .25s}
+.m.me .mb{background:linear-gradient(135deg,#ff93b4,#e2547d);color:#fff;border-radius:20px 20px 6px 20px;box-shadow:0 8px 18px -8px rgba(226,84,125,.75),inset 0 1px 0 rgba(255,255,255,.35)}
+.m.her .mb{background:#fff;color:#4d2336;border-radius:20px 20px 20px 6px;box-shadow:0 8px 18px -10px rgba(60,15,35,.55)}
+.m.pressed .mb{transform:scale(.95);filter:brightness(.92)}
 @keyframes mrise{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+.quote{background:rgba(255,255,255,.2)}
+.quote span{color:#fff}
+.reacts button{background:rgba(255,255,255,.55);box-shadow:var(--sh1)}
 
-/* Apple-Music style lyrics */
+/* ---- Apple-Music lyrics (word by word) ---- */
 .lyrbg{position:absolute;inset:0;opacity:0;transition:opacity .9s var(--e2);pointer-events:none;
-  background:radial-gradient(120% 70% at 50% 0%,rgba(255,170,195,.35),transparent 60%),linear-gradient(175deg,#b5506f 0%,#9b3f5d 52%,#6f2842 100%)}
+  background:radial-gradient(110% 60% at 50% -5%,rgba(255,190,210,.55),transparent 62%),linear-gradient(176deg,#e0708f 0%,#c4507a 48%,#92386a 100%)}
 body.lyr .lyrbg{opacity:1}
-body.lyr .artglow.on{opacity:.38;mix-blend-mode:soft-light}
-body.lyr .veil{opacity:0;transition:opacity .6s}
+body.lyr .artglow.on{opacity:.3;mix-blend-mode:soft-light}
+body.lyr .veil{opacity:0}
+.veil{transition:opacity .6s}
 body.lyr .l-head .title,body.lyr .l-head .artist{color:#fff}
-body.lyr .l-head .artist{opacity:.7}
-body.lyr .line{--c1:rgba(255,255,255,.4);--c0:rgba(255,255,255,.4);font-weight:700;
-  transition:transform .9s var(--e2) calc(var(--k,0)*26ms),opacity .8s var(--e2),filter .9s var(--e2),--c1 .8s}
-body.lyr .line.past{--w:108%}
-body.lyr .line.active{--c1:#fff;--c0:rgba(255,255,255,.4);transform:scale(1.015);
-  filter:blur(0) drop-shadow(0 0 6px rgba(255,255,255,.7)) drop-shadow(0 0 20px rgba(255,255,255,.55)) drop-shadow(0 0 44px rgba(255,214,230,.5));animation:lglowW 3s ease-in-out .8s infinite alternate}
-@keyframes lglowW{from{filter:blur(0) drop-shadow(0 0 5px rgba(255,255,255,.55)) drop-shadow(0 0 16px rgba(255,255,255,.4)) drop-shadow(0 0 36px rgba(255,214,230,.4))}to{filter:blur(0) drop-shadow(0 0 8px rgba(255,255,255,.85)) drop-shadow(0 0 26px rgba(255,255,255,.65)) drop-shadow(0 0 54px rgba(255,214,230,.6))}}
-body.lyr .line.picked{--c1:#fff;--c0:#fff}
+body.lyr .l-head .artist{opacity:.72}
+body.lyr .ib,body.lyr .pill{background:rgba(255,255,255,.2);color:#fff;box-shadow:none}
+.line .w{display:inline-block;color:rgba(255,255,255,.42);transition:color .55s var(--e2),text-shadow .7s var(--e2),transform .7s var(--e2)}
+.line.active .w{color:rgba(255,255,255,.5)}
+.line.active .w.on{color:#fff;transform:translateY(-3px);text-shadow:0 0 8px rgba(255,255,255,.75),0 0 20px rgba(255,255,255,.45)}
+.line.past .w,.line .w{text-shadow:0 0 0 rgba(255,255,255,0)}
+body.lyr .line.picked .w{color:#ffe0ea;text-shadow:none}
 body.lyr #lyricsSource,body.lyr .lyr-empty{color:rgba(255,255,255,.55)}
-body.lyr .dock{background:rgba(88,30,52,.55);box-shadow:0 -16px 40px -18px rgba(40,10,25,.6),inset 0 1px 0 rgba(255,255,255,.14)}
-body.lyr .grab::after{background:rgba(255,255,255,.35)}
-body.lyr .tabbar{background:rgba(88,30,52,.6);box-shadow:0 -14px 36px -18px rgba(40,10,25,.6),inset 0 1px 0 rgba(255,255,255,.12)}
-body.lyr .tab{color:rgba(255,255,255,.6)}
-body.lyr .tab.active{background:rgba(255,255,255,.18);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 8px 18px -8px rgba(0,0,0,.4)}
-body.lyr .ch-t b{color:#fff}body.lyr .ch-t span{color:#ffd6e3}
-body.lyr .ch-clear{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
-body.lyr .m.her .mb{background:rgba(255,255,255,.92);color:var(--ink)}
-body.lyr .mq{color:#ffd6e3;border-color:rgba(255,255,255,.5)}
-body.lyr .chat-form input{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.2);color:#fff}
-body.lyr .chat-form input::placeholder{color:rgba(255,255,255,.55)}
-body.lyr .reacts button{background:rgba(255,255,255,.14)}
-body.lyr .pill{background:rgba(255,255,255,.18);color:#fff}
-@media(prefers-reduced-motion:reduce){body.lyr .line.active{animation:none}}
+body.lyr .dock{background:rgba(255,255,255,.15);box-shadow:0 -16px 40px -18px rgba(70,15,45,.55),inset 0 1px 0 rgba(255,255,255,.3)}
+body.lyr .grab::after{background:rgba(255,255,255,.5)}
+body.lyr .tabbar{background:rgba(255,255,255,.14);box-shadow:0 -14px 36px -18px rgba(70,15,45,.5),inset 0 1px 0 rgba(255,255,255,.25)}
+body.lyr .tab{color:rgba(255,255,255,.7)}
+body.lyr .tab.active{background:rgba(255,255,255,.26);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 18px -8px rgba(70,15,45,.5)}
+body.lyr .ch-t b{color:#fff}body.lyr .ch-t span{color:#ffe0ea}
+body.lyr .ch-clear{background:rgba(255,255,255,.2);color:#fff;box-shadow:none}
+body.lyr .mq{color:#ffe0ea;border-color:rgba(255,255,255,.55)}
+body.lyr .chat-form input{background:rgba(255,255,255,.95);border-color:transparent;color:#4d2336;box-shadow:var(--sh1)}
+body.lyr .send{box-shadow:0 8px 18px -8px rgba(70,15,45,.6)}
+body.lyr .dock .heart{color:#fff}
+
+/* ---- touch feedback ---- */
+.rip{position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.5);transform:scale(0);animation:ripple .6s var(--e2) forwards}
+@keyframes ripple{to{transform:scale(1);opacity:0}}
+.primary,.send,.tab,.linkbtn,.reacts button{position:relative;overflow:hidden}
+.primary.busy{pointer-events:none}
+.primary.busy #goLabel::after{content:"";display:inline-block;width:14px;height:14px;margin-left:10px;vertical-align:-2px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.shake{animation:shake .42s var(--e2)}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.view,.row,.m{animation-fill-mode:both}
+@media(prefers-reduced-motion:reduce){.bg::before,.bg::after{animation:none}}
 </style>
 </head>
 <body>
@@ -502,7 +536,6 @@ body.lyr .pill{background:rgba(255,255,255,.18);color:#fff}
       <input id="roomCodeInput" type="hidden" value="">
       <div class="field" id="passwordField"><svg class="i"><use href="#i-lock"/></svg><input class="f" id="roomPasswordInput" type="password" placeholder="Password" maxlength="8" aria-label="Password" autocomplete="current-password" required></div>
       <div class="field hidden" id="phraseField"><svg class="i"><use href="#i-heart"/></svg><input class="f" id="phraseInput" type="text" placeholder="Code from your email" maxlength="80" aria-label="Email code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false"></div>
-      <p class="hint hidden" id="loginHint">Code sent to your email</p>
       <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
       <button class="primary" id="goBtn" type="submit"><span id="goLabel">Continue</span><svg class="i"><use href="#i-arrow"/></svg></button>
       <div class="subrow hidden" id="phraseActions"><button type="button" id="backStepBtn" class="linkbtn">Back</button><span class="dotsep"></span><button type="button" id="resendPhraseBtn" class="linkbtn">Send a fresh code</button></div>
@@ -988,7 +1021,7 @@ DuoTune.ui.setLyrics = raw => {
   S.lrc = parseLrc(raw); S._lrcRaw = raw; S._lineEls = null; S._act = null; S.line = -1; S.quote && clearQuote();
   const box = $('#lyrics');
   box.innerHTML = S.lrc.length
-    ? `<div class="pad"></div>${S.lrc.map((l,i)=>`<div class="line" data-i="${i}" style="--d:4">${esc(l.text)}</div>`).join('')}<div class="pad b"></div>`
+    ? `<div class="pad"></div>${S.lrc.map((l,i)=>`<div class="line" data-i="${i}" style="--d:4">${esc(l.text).split(/\s+/).map(w=>`<span class="w">${w}</span>`).join(' ')}</div>`).join('')}<div class="pad b"></div>`
     : `<div class="lyr-empty">♪</div>`;
   box.scrollTop = 0;
 };
@@ -1003,18 +1036,19 @@ function updateLine(p=estPos()){
       el.style.setProperty('--d', d); el.style.setProperty('--k', Math.min(Math.max(0,i-a),7));
       el.classList.toggle('active', i===a);
       el.classList.toggle('past', a>=0 && i<a);
-      if (i!==a) el.style.removeProperty('--w');
+      if (i!==a) el.querySelectorAll('.w.on').forEach(x=>x.classList.remove('on'));
     });
     S._act = a>=0 ? els[a] : null;
+    S._wEls = S._act ? [...S._act.querySelectorAll('.w')] : []; { let tot=0; const lens=S._wEls.map(x=>x.textContent.length+1); lens.forEach(l=>tot+=l); let c=0; S._wAt=lens.map(l=>{const v=c/Math.max(1,tot); c+=l; return v;}); }
     scrollToLine(false);
   }
   /* Apple-style sweep: LRCLIB gives line times only, so the fill is spread across the line's estimated sung length */
   if (S._act){
     const L = S.lrc[a], nx = S.lrc[a+1], len = (L.text||'').length;
     const gap = (nx ? nx.t : L.t+5) - L.t;
-    const sung = Math.max(.8, Math.min(gap*.92, Math.max(1.4, len*.085)));
+    const sung = Math.max(.8, Math.min(gap*.9, Math.max(1.6, len*.1)));
     const w = Math.max(0, Math.min(1, (p - L.t)/sung));
-    S._act.style.setProperty('--w', (-8 + w*116) + '%');
+    const ws=S._wEls||[]; for(let k=0;k<ws.length;k++){ const on=w>=S._wAt[k]-.001; if(on!==ws[k].classList.contains('on')) ws[k].classList.toggle('on',on); }
   }
 }
 function scrollToLine(instant){
@@ -1057,6 +1091,7 @@ DuoTune.ui.receiveMessage = m => {
 const setUnread = on => $('#unreadDot').classList.toggle('hidden', !on);
 
 $('#chatInput').addEventListener('input', e => $('#sendBtn').disabled = !e.target.value.trim());
+$('#sendBtn').addEventListener('pointerdown',e=>e.preventDefault());
 $('#chatForm').onsubmit = e => {
   e.preventDefault();
   const text = $('#chatInput').value.trim(); if (!text) return;
@@ -1077,7 +1112,7 @@ $('#grab').onclick = () => setChatOpen(!S.chatOpen);
 
 function duotuneKeepChatAboveKeyboard(){
   const input=$('#chatInput'); if(!input)return;
-  input.addEventListener('focus',()=>{ if(!S.chatOpen)setChatOpen(true); setTimeout(()=>{const l=$('#msgs'); if(l)l.scrollTop=l.scrollHeight;},340); });
+  input.addEventListener('focus',()=>{ window.scrollTo(0,0); if(!S.chatOpen)setChatOpen(true); setTimeout(()=>{const l=$('#msgs'); if(l)l.scrollTop=l.scrollHeight;},340); });
 }
 duotuneKeepChatAboveKeyboard();
 
@@ -1097,6 +1132,17 @@ function floatReaction(emoji, mine){
 }
 DuoTune.ui.receiveReaction = emoji => { console.info('[DUOTUNE] reaction received', emoji); floatReaction(emoji, false); };
 
+/* ---- haptics + touch ripple ---- */
+const haptic=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch{}};
+document.addEventListener('pointerdown',e=>{
+  const b=e.target.closest('button,.tab,.row'); if(!b||b.disabled)return;
+  haptic(b.matches('.primary')?14:7);
+  if(b.matches('.primary,.send,.tab,.linkbtn,.reacts button')){
+    const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height)*1.6,sp=document.createElement('span');
+    sp.className='rip'; sp.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
+    b.appendChild(sp); setTimeout(()=>sp.remove(),650);
+  }
+},{passive:true});
 /* ---- chat: her photo header, clear, delete own message (long-press) ---- */
 function renderChatHead(){
   const av=$('#chatAv'); if(!av)return; const url=S.herAvatar, n=partnerName();
@@ -1112,15 +1158,15 @@ DuoTune.ui.removeMessage=({cid,text,mine})=>{
   if(i<0)for(let k=S.msgs.length-1;k>=0;k--){const m=S.msgs[k];if(m.text===text&&(m.by==='me')===!!mine){i=k;break;}}
   if(i<0)return; S.msgs.splice(i,1); renderChatLists();
 };
-$('#chatClearBtn').onclick=async()=>{ if(await uiConfirm('Clear this conversation for both of you?','Clear chat'))DuoTune.emit('chat:clear',{}); };
+$('#chatClearBtn').onclick=async()=>{ if(await uiConfirm('Clear the chat on your side? '+partnerName()+' keeps hers.','Clear'))DuoTune.emit('chat:clear',{}); };
 (function(){
   let t=0,sx=0,sy=0;
-  const box=$('#msgs');
+  const box=$('#msgs'); box.addEventListener('contextmenu',e=>e.preventDefault());
   box.addEventListener('pointerdown',e=>{
     const m=e.target.closest('.m.me'); if(!m)return; sx=e.clientX; sy=e.clientY;
     t=setTimeout(async()=>{ t=0; m.classList.add('pressed');
-      const ok=await uiConfirm('Delete this message for both of you?','Delete'); m.classList.remove('pressed');
-      if(ok)DuoTune.emit('chat:delete',{cid:m.dataset.cid,id:m.dataset.id,text:m.querySelector('.mb').textContent});
+      haptic(18);const ok=await uiConfirm('Remove this message from your chat?','Remove'); m.classList.remove('pressed');
+      haptic(18);if(ok)DuoTune.emit('chat:delete',{cid:m.dataset.cid,id:m.dataset.id,text:m.querySelector('.mb').textContent});
     },520);
   });
   const stop=()=>{if(t){clearTimeout(t);t=0;}};
@@ -1227,7 +1273,7 @@ $('#panePl').onclick=async e=>{
    NAVIGATION, PRESENCE, ROOM
    ========================================================================== */
 function go(v){
-  S.view = v; document.body.classList.toggle('lyr', v==='lyrics');
+  S.view = v; document.body.classList.toggle('lyr', v==='lyrics'); if(v!=='lyrics'&&document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   $$('.view').forEach(x=>x.classList.toggle('active', x.id==='v-'+v));
   $$('.tab').forEach(x=>x.classList.toggle('active', x.dataset.v===v));
   if (v==='lyrics'){ setUnread(false); setTimeout(()=>scrollToLine(true), 60); }
@@ -1362,23 +1408,22 @@ $('#welcomeForm').onsubmit=async e=>{
   e.preventDefault();
   const name=nameInput.value.trim(),password=$('#roomPasswordInput').value;
   if(!duotuneLoginChallengeId){
-    if(!['kiran','pooja'].includes(name.toLowerCase())){toast('Enter Kiran or Pooja to continue');nameInput.focus();return;}
-    if(password!=='5'){toast('Incorrect password');$('#roomPasswordInput').focus();return;}
+    if(!['kiran','pooja'].includes(name.toLowerCase())){toast('Pakkaki Po 👊');haptic([30,40,30]);$('#nameInput').parentElement.classList.remove('shake');void $('#nameInput').offsetWidth;$('#nameInput').parentElement.classList.add('shake');return;}
+    if(password!=='5'){toast('Incorrect password');haptic([20,30,20]);$('#roomPasswordInput').focus();return;}
     const fixedName=name.toLowerCase()==='kiran'?'Kiran':'Pooja';
-    try{ $('#goBtn').disabled=true; await duotuneSendLoginPhrase(fixedName,password); }
+    try{ $('#goBtn').disabled=true;$('#goBtn').classList.add('busy'); await duotuneSendLoginPhrase(fixedName,password); }
     catch(err){console.error('[DUOTUNE] Phrase send failed',err);toast(err.message||'Could not send the code');}
-    finally{$('#goBtn').disabled=false;}
+    finally{$('#goBtn').disabled=false;$('#goBtn').classList.remove('busy');}
     return;
   }
   const phrase=$('#phraseInput').value.trim();
   if(!phrase){toast('Enter the code from your email');$('#phraseInput').focus();return;}
-  try{ $('#goBtn').disabled=true; await duotuneVerifyLoginPhrase(phrase); }
+  try{ $('#goBtn').disabled=true;$('#goBtn').classList.add('busy'); await duotuneVerifyLoginPhrase(phrase); }
   catch(err){console.error('[DUOTUNE] Phrase verification failed',err);toast(err.message||'Could not verify the code');}
-  finally{$('#goBtn').disabled=false;}
+  finally{$('#goBtn').disabled=false;$('#goBtn').classList.remove('busy');}
 };
 function loginStep(n){
   $('#welcomeForm').dataset.step=n; $('#nameInput').readOnly=(n===2);
-  $('#loginHint').classList.toggle('hidden',n!==2);
 }
 $('#backStepBtn').onclick=()=>resetPhraseStep();
 $('#resendPhraseBtn').onclick=async()=>{
@@ -1474,8 +1519,6 @@ function duotuneReceive(payload){
     case 'favs':
       if(payload.sender!==duotunePresenceKey&&Array.isArray(payload.list)){S.favs.her=payload.list;favSave();renderFavs();}
       break;
-    case 'chat-cleared': DuoTune.ui.clearChat(); break;                                  /* UI-FIX */
-    case 'chat-delete': DuoTune.ui.removeMessage({cid:payload.cid,text:payload.text,mine:false}); break;
     case 'history-cleared': window.DUOTUNE_HISTORY=[]; if(S.stats){S.stats.hist=[];store.set(STATKEY(),JSON.stringify(S.stats));} renderFavs(); break;
     case 'playlist-refresh': duotuneLoadPlaylists(); break;
     case 'profile': if(payload.sender!==duotunePresenceKey){S.herAvatar=payload.avatar||null;if(payload.name)S.her.name=payload.name;renderPresence();} break;
@@ -1755,9 +1798,13 @@ async function duotuneRestoreQueue(){
 async function duotuneLoadChat(){
   if(!duotuneSupabase || !S.code) return;
   try{
+    let clearedAt=store.get(CLEARKEY())||'';
+    try{ const c=await duotuneSupabase.from('duotune_chat_clears').select('cleared_at').eq('room_code',S.code).eq('user_id',S.authUserId).maybeSingle();
+      if(c.data&&c.data.cleared_at&&new Date(c.data.cleared_at)>new Date(clearedAt||0)){clearedAt=c.data.cleared_at;store.set(CLEARKEY(),clearedAt);} }catch(e){}
+    const hid=hiddenSet();
     const {data,error}=await duotuneSupabase.from('duotune_chat').select('*').eq('room_code',S.code).order('created_at',{ascending:true}).limit(200);
     if(error) throw error;
-    (data||[]).forEach(row=>DuoTune.ui.receiveMessage({text:row.message,quote:row.quote||null,mine:row.user_id===S.authUserId,silent:true,id:row.id})); /* UI-FIX: old messages keep their side, no popups */
+    (data||[]).filter(r=>!hid.has(String(r.id))&&(!clearedAt||new Date(r.created_at)>new Date(clearedAt))).forEach(row=>DuoTune.ui.receiveMessage({text:row.message,quote:row.quote||null,mine:row.user_id===S.authUserId,silent:true,id:row.id})); /* UI-FIX: old messages keep their side, no popups */
   }catch(e){console.warn('[DUOTUNE] Chat persistence unavailable. Run the setup SQL.',e);}
 }
 
@@ -1921,23 +1968,25 @@ DuoTune.on('chat:send',async p=>{
   if(duotuneSupabase && S.code){const {error}=await duotuneSupabase.from('duotune_chat').insert({room_code:S.code,user_id:S.authUserId,sender_name:S.me.name,message:p.text,quote:p.quote||null});if(error)console.warn('[DUOTUNE] Chat save failed. Run setup SQL.',error);}
 });
 DuoTune.on('reaction:send',p=>duotuneBroadcast({kind:'reaction',emoji:p.emoji}));
-/* UI-FIX: chat delete / clear (needs delete permission, see duotune-chat-delete.sql) */
+/* UI-FIX: private chat clear (duotune_chat_clears) + hide single message on this device */
+const CLEARKEY=()=>'duotune_clear_'+(S.code||'room'), HIDKEY=()=>'duotune_hidden_'+(S.code||'room');
+const hiddenSet=()=>{try{return new Set(JSON.parse(store.get(HIDKEY())||'[]'))}catch{return new Set()}};
 DuoTune.on('chat:clear',async()=>{
-  if(!duotuneSupabase||!S.code)return;
-  let {error}=await duotuneSupabase.rpc('duotune_clear_chat',{p_room_code:S.code});
-  if(error){ const r=await duotuneSupabase.from('duotune_chat').delete().eq('room_code',S.code); error=r.error; }
-  if(error){toast('Could not clear the chat yet. Delete permission is needed.');console.warn('[DUOTUNE] chat clear failed',error);return;}
-  DuoTune.ui.clearChat(); duotuneBroadcast({kind:'chat-cleared',sender:duotunePresenceKey}); toast('Conversation cleared');
+  const at=new Date().toISOString(); store.set(CLEARKEY(),at); DuoTune.ui.clearChat(); toast('Chat cleared ♡');
+  if(!duotuneSupabase||!S.code||!S.authUserId)return;
+  const {error}=await duotuneSupabase.from('duotune_chat_clears').upsert({room_code:S.code,user_id:S.authUserId,cleared_at:at},{onConflict:'room_code,user_id'});
+  if(error)console.warn('[DUOTUNE] chat clear not saved',error);
 });
 DuoTune.on('chat:delete',async p=>{
   DuoTune.ui.removeMessage({cid:p.cid,text:p.text,mine:true});
-  duotuneBroadcast({kind:'chat-delete',sender:duotunePresenceKey,cid:p.cid,text:p.text});
-  if(!duotuneSupabase||!S.code||!S.authUserId)return;
+  const h=hiddenSet(); if(p.id)h.add(String(p.id));
   try{
-    let id=p.id;
-    if(!id){const {data}=await duotuneSupabase.from('duotune_chat').select('id').eq('room_code',S.code).eq('user_id',S.authUserId).eq('message',p.text).order('created_at',{ascending:false}).limit(1); id=data&&data[0]&&data[0].id;}
-    if(id){const {error}=await duotuneSupabase.from('duotune_chat').delete().eq('id',id).eq('user_id',S.authUserId); if(error)console.warn('[DUOTUNE] message delete failed',error);}
+    if(!p.id&&duotuneSupabase&&S.code&&S.authUserId){
+      const {data}=await duotuneSupabase.from('duotune_chat').select('id').eq('room_code',S.code).eq('user_id',S.authUserId).eq('message',p.text).order('created_at',{ascending:false}).limit(1);
+      if(data&&data[0])h.add(String(data[0].id));
+    }
   }catch(e){console.warn(e);}
+  store.set(HIDKEY(),JSON.stringify([...h].slice(-500)));
 });
 DuoTune.on('queue:add',async p=>{
   const incomingUrl=String(p?.url||'').trim();
