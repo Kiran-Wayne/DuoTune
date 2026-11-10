@@ -40,7 +40,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--rose2);outline-
 .blob.a{width:340px;height:340px;background:#d6d7f2;top:-90px;left:-110px}
 .blob.b{width:380px;height:380px;background:#9caad8;bottom:-140px;right:-150px;animation-duration:32s;opacity:.36}
 .blob.c{width:240px;height:240px;background:#f2f2fb;top:38%;left:46%;animation-duration:38s;opacity:.45}
-.grain{position:absolute;inset:0;opacity:.13;mix-blend-mode:multiply;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55 0 0 0 0 .3 0 0 0 0 .38 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.grain{position:absolute;inset:0;opacity:.05;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55 0 0 0 0 .3 0 0 0 0 .38 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
 @keyframes drift{to{transform:translate3d(46px,-38px,0) scale(1.14)}}
 
 /* ============ WELCOME ============ */
@@ -179,10 +179,6 @@ main{flex:1 1 auto;position:relative;min-height:0;overflow:hidden}
 .dock.open .msgwrap{height:min(26dvh,220px)}
 .msgs{height:100%;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;gap:6px;padding:4px 2px 10px}
 .msgs::-webkit-scrollbar{display:none}
-.peek{display:none;flex-direction:column;gap:5px;padding:0 2px 8px}
-.peek:empty{display:none}
-.dock.open .peek{display:none}
-.peek .mb{font-size:14.5px;padding:7px 13px}
 .m{max-width:82%;display:flex;flex-direction:column;animation:rise .35s var(--ease) both}
 .m.me{align-self:flex-end;align-items:flex-end}
 .m.her{align-self:flex-start}
@@ -200,12 +196,6 @@ main{flex:1 1 auto;position:relative;min-height:0;overflow:hidden}
 .chat-form{display:flex;gap:8px;align-items:center}
 .chat-form input{flex:1;min-width:0;height:44px;border-radius:22px;border:1px solid var(--hair);background:#fff;padding:0 18px;font-size:16px;outline:none}
 .chat-form input:focus{border-color:var(--rose)}
-body.duo-keyboard-open .tabbar{display:none!important}
-body.duo-keyboard-open .dock{padding-bottom:max(6px,env(safe-area-inset-bottom))}
-body.duo-keyboard-open .dock.open .msgwrap{height:min(18dvh,130px)}
-body.duo-keyboard-open .reacts{padding-bottom:3px}
-body.duo-keyboard-open .reacts button{height:30px;font-size:20px}
-body.duo-keyboard-open .chat-form input{font-size:16px;min-height:44px}
 @media(max-height:560px){.dock.open .msgwrap{height:min(24dvh,150px)}.dock{padding-bottom:max(8px,env(safe-area-inset-bottom))}}
 .send{width:44px;height:44px;border-radius:50%;background:var(--rose2);color:#fff;display:grid;place-items:center;flex:none;transition:transform .15s,opacity .2s}
 .send:active{transform:scale(.9)}.send:disabled{opacity:.35}
@@ -445,7 +435,7 @@ body.kb .dock{padding-bottom:6px}
 .lyrbg{position:absolute;inset:0;opacity:0;transition:opacity .9s var(--e2);pointer-events:none;
   background:radial-gradient(110% 60% at 50% -5%,rgba(204,213,241,.5),transparent 62%),linear-gradient(176deg,#7d90d3 0%,#5a71ba 48%,#40568a 100%)}
 body.lyr .lyrbg{opacity:1}
-body.lyr .artglow.on{opacity:.22;mix-blend-mode:soft-light}
+body.lyr .artglow.on{opacity:.16}
 body.lyr .veil{opacity:0}
 .veil{transition:opacity .6s}
 body.lyr .l-head .title,body.lyr .l-head .artist{color:#fff}
@@ -516,8 +506,6 @@ body.lyr .dock .heart{color:#fff}
 @keyframes sweep{to{background-position:-200% 0}}
 /* top pill only on the listening tab */
 .top{transition:height .4s var(--e2),opacity .3s,padding .4s var(--e2)}
-body:not(.vp) .top{height:0;padding-top:0;opacity:0;overflow:hidden;pointer-events:none}
-body:not(.vp) .art-stage{min-height:0}
 
 /* keyboard: animate the single resize */
 #app{transition:height .3s var(--e2)}
@@ -545,6 +533,82 @@ body.kb #welcome .w-art{min-height:0;opacity:0}
 .line{filter:blur(calc(min(var(--d,4),3)*.6px))}
 .line.active{filter:blur(0)}
 #welcomeForm .primary{transform:translateZ(0)}
+
+/* ================= v7: layering + flicker audit ================= */
+html{touch-action:manipulation}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text}
+/* app shell: no transform-centering (sub-pixel flicker) */
+#app{left:0;right:0;margin:0 auto;transform:none;width:100%;max-width:480px}
+/* top pill overlays the player only; layout never changes between tabs */
+.top{position:absolute;left:0;right:0;top:0;height:calc(var(--top) + env(safe-area-inset-top));transition:opacity .3s var(--e2)}
+body:not(.vp) .top{opacity:0;pointer-events:none}
+#v-player{padding-top:calc(var(--top) + env(safe-area-inset-top))}
+#v-lyrics,#v-library{padding-top:calc(env(safe-area-inset-top) + 8px)}
+/* tab crossfade: outgoing leaves first, incoming follows (no double-exposure flash) */
+.view{transition:opacity .2s ease,transform .45s var(--spring)}
+.view.active{transition:opacity .38s ease .1s,transform .6s var(--spring) .05s}
+.lyrbg{transition:opacity .55s ease}
+body.lyr .bg::before,body.lyr .bg::after{display:none}
+.row{animation:none}
+.seg button{transition:background .3s var(--e2),color .3s,box-shadow .3s}
+
+/* lyrics fill the whole view; the chat dock floats over them (zero relayout when it opens) */
+#v-lyrics{position:absolute}
+#v-lyrics .l-head{position:relative;z-index:3}
+#lyrics{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top) + 8px + 84px);bottom:0;flex:none;padding-top:0}
+#lyricsSource{position:absolute;left:0;right:0;top:46%;z-index:1;padding:0 26px}
+.dock{position:absolute;left:0;right:0;bottom:0;z-index:4}
+body.lyr .dock{background:linear-gradient(180deg,#8190cf,#6b7bb9);box-shadow:0 -18px 44px -16px rgba(40,50,100,.55),inset 0 1px 0 rgba(255,255,255,.35)}
+.dock{border-radius:26px 26px 0 0;padding:0 14px 10px;transition:box-shadow .5s}
+.grab{height:22px;transition:opacity .25s}
+.dock.open .grab::after{opacity:0}
+.grab::after{transition:opacity .25s}
+
+/* chat dock: compact, avatar-only badge */
+.chat-head{display:block;padding:0;max-height:none;overflow:visible;gap:0;position:absolute;left:50%;top:-24px;margin-left:-23px;width:46px;height:46px;z-index:5;pointer-events:none;opacity:0;transform:translateY(10px) scale(.8);transition:opacity .3s,transform .5s var(--spring)}
+.dock.open .chat-head{opacity:1;transform:none}
+.av.ch{flex:none;width:46px;height:46px;font-size:18px;background-size:cover;box-shadow:0 0 0 2.5px rgba(255,255,255,.95),0 10px 20px -6px rgba(30,40,90,.6)}
+.av.ch::after{width:12px;height:12px;right:-1px;bottom:-1px;border:2.5px solid #6b7bb9}
+.av.ch.typing{animation:avpulse 1.2s ease-in-out infinite}
+@keyframes avpulse{50%{box-shadow:0 0 0 2.5px rgba(255,255,255,.95),0 0 0 9px rgba(255,255,255,.22),0 10px 20px -6px rgba(30,40,90,.6)}}
+.ch-clear{position:absolute;right:12px;top:8px;width:30px;height:30px;z-index:5;opacity:0;pointer-events:none;transition:opacity .3s;background:rgba(255,255,255,.2);color:#fff;box-shadow:none}
+.dock.open .ch-clear{opacity:1;pointer-events:auto}
+.ch-clear .i{width:15px;height:15px}
+.msgwrap{display:block;height:0;overflow:hidden;transition:height .45s var(--spring)}
+body .dock.open .msgwrap{height:min(36dvh,300px)}
+body.kb .dock.open .msgwrap{height:clamp(110px,calc(var(--vvh,100dvh)*.36),220px)}
+.msgs{height:100%;padding:30px 4px 8px;gap:3px;overscroll-behavior:contain;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 38px);mask-image:linear-gradient(to bottom,transparent 0,#000 38px)}
+.reacts{padding:6px 2px 6px;gap:6px}
+.reacts button{width:auto;flex:1;height:32px;font-size:19px;border-radius:16px;background:rgba(255,255,255,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.reacts button:active{background:rgba(255,255,255,.4)}
+.chat-form input{height:42px;border-radius:21px}
+.send{width:42px;height:42px}
+.quote{margin:0 2px 6px;padding:6px 8px 6px 12px;background:rgba(255,255,255,.2)}
+.quote.land{animation:land .5s var(--spring)}
+@keyframes land{from{opacity:0;transform:translateY(-10px) scale(.97)}to{opacity:1;transform:none}}
+.lyric-drop{position:fixed;z-index:30;pointer-events:none;font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.2;color:#fff;transform-origin:left center;text-shadow:none}
+
+/* bubbles */
+.m{max-width:78%;animation:mrise .45s var(--spring) both;margin-top:0}
+.m.me + .m.her,.m.her + .m.me{margin-top:9px}
+.m .mb{position:relative;font-size:15.5px;line-height:1.32;padding:9px 15px;letter-spacing:-.005em;border-radius:22px}
+.m.me .mb{background:linear-gradient(150deg,#e9edff 0%,#c9d2f5 100%);color:#2b3566;box-shadow:0 8px 18px -10px rgba(25,35,90,.7),inset 0 1px 0 rgba(255,255,255,.9);border-bottom-right-radius:7px}
+.m.her .mb{background:rgba(255,255,255,.96);color:#27304f;box-shadow:0 8px 18px -12px rgba(25,35,90,.65);border-bottom-left-radius:7px}
+.m.me:has(+ .m.me) .mb{border-bottom-right-radius:22px}
+.m.me + .m.me .mb{border-top-right-radius:7px}
+.m.her:has(+ .m.her:not(.typing)) .mb{border-bottom-left-radius:22px}
+.m.her + .m.her .mb{border-top-left-radius:7px}
+.m.me + .m.me,.m.her + .m.her{margin-top:0}
+.mq{font-family:var(--serif);font-style:italic;font-size:14.5px;color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.6);margin-bottom:3px}
+.m.typing .mb{display:flex;gap:4px;align-items:center;padding:13px 16px;border-bottom-left-radius:7px}
+.m.typing i{width:7px;height:7px;border-radius:50%;background:#8a96cf;animation:tdot 1.1s ease-in-out infinite}
+.m.typing i:nth-child(2){animation-delay:.15s}.m.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-4px);opacity:1}}
+.m.typing.out{opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
+.line.tapped{animation:tapline .5s var(--spring)}
+@keyframes tapline{40%{transform:scale(1.04)}}
+@media(prefers-reduced-motion:reduce){.av.ch.typing{animation:none}}
 </style>
 </head>
 <body>
@@ -655,9 +719,10 @@ body.kb #welcome .w-art{min-height:0;opacity:0}
         <div id="lyrics"></div><div id="lyricsSource"></div>
         <div class="dock" id="dock">
           <div id="floats" class="hidden"></div>
+          <div class="chat-head" aria-hidden="true"><div class="av her ch" id="chatAv">♡</div></div>
+          <button type="button" class="ib ch-clear" id="chatClearBtn" aria-label="Clear conversation"><svg class="i"><use href="#i-trash"/></svg></button>
           <button class="grab" id="grab" aria-label="Show conversation"></button>
-          <div class="msgwrap"><div class="chat-head"><div class="av her ch" id="chatAv">♡</div><div class="ch-t"><b id="chatName">Her</b><span id="chatState"></span></div><button type="button" class="ib ch-clear" id="chatClearBtn" aria-label="Clear conversation"><svg class="i"><use href="#i-trash"/></svg></button></div><div class="msgs" id="msgs"></div></div>
-          <div class="peek" id="peek"></div>
+          <div class="msgwrap"><div class="msgs" id="msgs"></div></div>
           <div class="quote hidden" id="quote"><span id="quoteText"></span><button id="quoteX" aria-label="Remove quote"><svg class="i"><use href="#i-x"/></svg></button></div>
           <div class="reacts" id="reacts"></div>
           <form class="chat-form" id="chatForm" autocomplete="off">
@@ -854,7 +919,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ S.pos=e
     const kb=h<maxH-120;
     root.style.setProperty('--vvh',Math.round(h)+'px');
     root.style.setProperty('--vvt',Math.round(top)+'px');
-    if(kb!==lastKb){ lastKb=kb; document.body.classList.toggle('kb',kb);
+    if(kb!==lastKb){ lastKb=kb; document.body.classList.toggle('kb',kb); if(window.followLine)followLine(420);
       if(kb)setTimeout(()=>{const l=document.getElementById('msgs'); if(l)l.scrollTop=l.scrollHeight;},330); }
   };
   const sched=()=>{ if(!raf)raf=requestAnimationFrame(apply); };
@@ -1148,12 +1213,35 @@ function followLine(ms){
   S._fl=requestAnimationFrame(step);
 }
 ['touchstart','wheel'].forEach(ev => $('#lyrics').addEventListener(ev, () => { S.userScrollUntil = Date.now()+3500; cancelAnimationFrame(S._sa); cancelAnimationFrame(S._fl); }, {passive:true}));
+/* tap a lyric = seek there; double-tap = drop it into the chat as a quote */
+let lastTap={i:-1,t:0};
 $('#lyrics').addEventListener('click', e => {
   const el = e.target.closest('.line'); if (!el) return;
-  $$('#lyrics .line.picked').forEach(x=>x.classList.remove('picked'));
-  el.classList.add('picked'); S.quote = el.textContent;
-  $('#quoteText').textContent = '“'+S.quote+'”'; $('#quote').classList.remove('hidden'); $('#chatInput').focus();
+  const i = +el.dataset.i, now = Date.now();
+  if (lastTap.i===i && now-lastTap.t<340){ lastTap={i:-1,t:0}; quoteLine(el); return; }
+  lastTap={i,t:now};
+  const L = S.lrc[i]; if (!L) return;
+  S.userScrollUntil = 0; haptic(8);
+  el.classList.remove('tapped'); void el.offsetWidth; el.classList.add('tapped');
+  act('player:seek',{seconds:Math.max(0,L.t)},()=>{S.pos=L.t;S._tAt=performance.now();renderProgress()});
 });
+function quoteLine(el){
+  haptic([10,30,14]);
+  S.quote = el.textContent.trim();
+  $$('#lyrics .line.picked').forEach(x=>x.classList.remove('picked')); el.classList.add('picked');
+  if(!S.chatOpen) setChatOpen(true);
+  $('#quoteText').textContent = '“'+S.quote+'”';
+  const q=$('#quote'); q.classList.remove('hidden');
+  q.classList.remove('land'); void q.offsetWidth; q.classList.add('land');
+  /* the lyric visibly drops from the lyrics down into the chat */
+  const r=el.getBoundingClientRect(), d=document.createElement('div');
+  d.className='lyric-drop'; d.textContent=S.quote;
+  d.style.cssText=`left:${r.left}px;top:${r.top}px;width:${Math.min(r.width,innerWidth-40)}px`;
+  document.body.appendChild(d);
+  const tq=q.getBoundingClientRect(), dy=(tq.top+tq.height/2)-(r.top+r.height/2);
+  const a=d.animate([{transform:'translateY(0) scale(1)',opacity:1},{transform:`translateY(${dy*.6}px) scale(.96)`,opacity:.95,offset:.55},{transform:`translateY(${dy}px) scale(.8)`,opacity:0}],{duration:620,easing:'cubic-bezier(.32,.72,0,1)'});
+  a.onfinish=()=>d.remove(); setTimeout(()=>d.remove(),900);
+}
 function clearQuote(){ S.quote = null; $('#quote').classList.add('hidden'); $$('#lyrics .line.picked').forEach(x=>x.classList.remove('picked')); }
 $('#quoteX').onclick = clearQuote;
 
@@ -1163,11 +1251,10 @@ $('#quoteX').onclick = clearQuote;
 const msgHTML = m => `<div class="m ${m.by}" data-cid="${esc(m.cid||'')}" data-id="${esc(m.id||'')}">${m.quote?`<div class="mq">“${esc(m.quote)}”</div>`:''}<div class="mb">${esc(m.text)}</div></div>`;
 function pushMessage(m){
   S.msgs.push(m);
-  const list = $('#msgs'); list.insertAdjacentHTML('beforeend', msgHTML(m)); list.scrollTop = list.scrollHeight;
-  const pk = $('#peek'); pk.insertAdjacentHTML('beforeend', msgHTML(m));   /* last 3 stay visible, never fade */
-  while (pk.children.length > 3) pk.firstElementChild.remove();
+  const list = $('#msgs'); const ty=list.querySelector('.m.typing'); if(ty)ty.remove(); list.insertAdjacentHTML('beforeend', msgHTML(m)); list.scrollTop = list.scrollHeight;
 }
 DuoTune.ui.receiveMessage = m => {
+  if(!m.mine&&!m.silent) DuoTune.ui.setTyping&&DuoTune.ui.setTyping(false);
   pushMessage({by: m.mine ? 'me' : 'her', text:m.text, quote:m.quote||null, cid:m.cid||'', id:m.id||''});
   if (m.silent || m.mine) return;                       /* history load / own message: no popup, no dot */
   if (S.view !== 'lyrics') { showBanner(partnerName(), m.text); setUnread(true); }
@@ -1175,6 +1262,19 @@ DuoTune.ui.receiveMessage = m => {
 const setUnread = on => $('#unreadDot').classList.toggle('hidden', !on);
 
 $('#chatInput').addEventListener('input', e => $('#sendBtn').disabled = !e.target.value.trim());
+/* typing indicator (sent over the existing broadcast channel) */
+let typOn=false, typT=0;
+const stopTyping=()=>{ clearTimeout(typT); if(typOn){typOn=false;DuoTune.emit('chat:typing',{on:false});} };
+$('#chatInput').addEventListener('input',e=>{ if(!e.target.value.trim()){stopTyping();return;} if(!typOn){typOn=true;DuoTune.emit('chat:typing',{on:true});} clearTimeout(typT); typT=setTimeout(stopTyping,2600); });
+$('#chatInput').addEventListener('blur',stopTyping);
+let herTypT=0;
+DuoTune.ui.setTyping=on=>{
+  clearTimeout(herTypT); const box=$('#msgs'); let el=box.querySelector('.m.typing');
+  $('#chatAv').classList.toggle('typing',!!on);
+  if(!on){ if(el){el.classList.add('out'); setTimeout(()=>el.remove(),260);} return; }
+  if(!el){ box.insertAdjacentHTML('beforeend','<div class="m her typing"><div class="mb"><i></i><i></i><i></i></div></div>'); }
+  box.scrollTop=box.scrollHeight; herTypT=setTimeout(()=>DuoTune.ui.setTyping(false),4500);
+};
 $('#sendBtn').addEventListener('pointerdown',e=>e.preventDefault());
 $('#chatForm').onsubmit = e => {
   e.preventDefault();
@@ -1183,7 +1283,7 @@ $('#chatForm').onsubmit = e => {
   const cid = 'c'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   DuoTune.emit('chat:send', {text, quote, cid});
   pushMessage({by:'me', text, quote, cid});
-  $('#chatInput').value = ''; $('#sendBtn').disabled = true; clearQuote();
+  $('#chatInput').value = ''; $('#sendBtn').disabled = true; clearQuote(); stopTyping();
   if (MOCK && S.her.online) setTimeout(()=>DuoTune.ui.receiveMessage({text:HER_REPLIES[Math.random()*HER_REPLIES.length|0]}), 2200);
 };
 function setChatOpen(on){
@@ -1228,10 +1328,9 @@ function renderChatHead(){
   av.textContent=url?'':(n[0]||'♡').toUpperCase();
   av.style.backgroundImage=url?`url("${url}")`:''; av.style.backgroundSize='cover'; av.style.backgroundPosition='center';
   av.classList.toggle('on',!!S.her.online);
-  $('#chatName').textContent=n; $('#chatState').textContent=S.her.online?'with you':'';
 }
-function renderChatLists(){ $('#msgs').innerHTML=S.msgs.map(msgHTML).join(''); $('#peek').innerHTML=S.msgs.slice(-3).map(msgHTML).join(''); $('#msgs').scrollTop=$('#msgs').scrollHeight; }
-DuoTune.ui.clearChat=()=>{ S.msgs=[]; $('#msgs').innerHTML=''; $('#peek').innerHTML=''; };
+function renderChatLists(){ $('#msgs').innerHTML=S.msgs.map(msgHTML).join(''); $('#msgs').scrollTop=$('#msgs').scrollHeight; }
+DuoTune.ui.clearChat=()=>{ S.msgs=[]; $('#msgs').innerHTML=''; };
 DuoTune.ui.removeMessage=({cid,text,mine})=>{
   let i=-1; if(cid)i=S.msgs.findIndex(m=>m.cid===cid);
   if(i<0)for(let k=S.msgs.length-1;k>=0;k--){const m=S.msgs[k];if(m.text===text&&(m.by==='me')===!!mine){i=k;break;}}
@@ -1415,7 +1514,7 @@ DuoTune.ui.enterRoom = ({name, code}) => {
   if (MOCK) runMock();
 };
 function leaveRoom(){
-  clearInterval(tick); DuoTune.ui.setPlaying(false); S.msgs=[]; $('#msgs').innerHTML=''; $('#floats').innerHTML=''; $('#peek').innerHTML='';
+  clearInterval(tick); DuoTune.ui.setPlaying(false); S.msgs=[]; $('#msgs').innerHTML=''; $('#floats').innerHTML='';
   S.queue=[]; S.index=-1; S.her={name:'',online:false}; DuoTune.ui.setNowPlaying(null); renderQueue();
   document.body.classList.remove('lyr','kb','vp','in-room'); $('#room').classList.remove('in'); setTimeout(()=>$('#room').classList.add('hidden'), 500);
   $('#welcome').classList.remove('hidden'); requestAnimationFrame(()=>$('#welcome').classList.remove('leave'));
@@ -1571,6 +1670,9 @@ function duotuneReceive(payload){
   switch(payload.kind){
     case 'chat':
       if(payload.sender!==duotunePresenceKey) DuoTune.ui.receiveMessage({text:payload.text,quote:payload.quote||null,cid:payload.cid||''});
+      break;
+    case 'typing':
+      if(payload.sender!==duotunePresenceKey) DuoTune.ui.setTyping(!!payload.on);
       break;
     case 'reaction':
       DuoTune.ui.receiveReaction(payload.emoji);
@@ -2061,6 +2163,7 @@ DuoTune.on('chat:send',async p=>{
   duotuneBroadcast({kind:'chat',by:S.me.name,sender:duotunePresenceKey,text:p.text,quote:p.quote||null,cid:p.cid||''});
   if(duotuneSupabase && S.code){const {error}=await duotuneSupabase.from('duotune_chat').insert({room_code:S.code,user_id:S.authUserId,sender_name:S.me.name,message:p.text,quote:p.quote||null});if(error)console.warn('[DUOTUNE] Chat save failed. Run setup SQL.',error);}
 });
+DuoTune.on('chat:typing',p=>duotuneBroadcast({kind:'typing',on:!!p.on,sender:duotunePresenceKey}));
 DuoTune.on('reaction:send',p=>duotuneBroadcast({kind:'reaction',emoji:p.emoji}));
 /* UI-FIX: private chat clear (duotune_chat_clears) + hide single message on this device */
 const CLEARKEY=()=>'duotune_clear_'+(S.code||'room'), HIDKEY=()=>'duotune_hidden_'+(S.code||'room');
