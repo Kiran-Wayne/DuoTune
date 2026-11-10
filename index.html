@@ -673,6 +673,50 @@ body.kb .msgwrap,body.kb .dock{transition:none}
 .search{position:relative}
 .search .i{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;z-index:3;pointer-events:none}
 .search input.f{padding-left:46px!important}
+
+/* DUOTUNE polish: richer reaction chips without changing the emoji set */
+.reacts{align-items:center;gap:8px;padding:8px 3px 9px}
+.reacts button{
+  min-width:0;height:38px;flex:1;
+  display:grid;place-items:center;
+  border:1px solid rgba(255,255,255,.42);
+  border-radius:15px;
+  background:linear-gradient(155deg,rgba(255,255,255,.48),rgba(222,231,255,.24));
+  box-shadow:0 7px 16px -10px rgba(24,43,99,.7),
+             inset 0 1px 0 rgba(255,255,255,.78),
+             inset 0 -1px 0 rgba(66,91,155,.12);
+  text-shadow:0 2px 5px rgba(28,45,95,.18);
+  transform:translateY(0);
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s,background .2s,border-color .2s;
+}
+.reacts button:hover{
+  transform:translateY(-2px);
+  border-color:rgba(255,255,255,.78);
+  background:linear-gradient(155deg,rgba(255,255,255,.72),rgba(220,230,255,.42));
+  box-shadow:0 10px 20px -10px rgba(24,43,99,.72),
+             inset 0 1px 0 rgba(255,255,255,.9);
+}
+.reacts button:active{
+  transform:translateY(1px) scale(.94);
+  background:linear-gradient(155deg,rgba(255,255,255,.8),rgba(198,214,255,.48));
+  box-shadow:0 3px 8px -5px rgba(24,43,99,.7),inset 0 2px 5px rgba(31,52,111,.16);
+}
+/* Make the empty-lyrics music note crisp and unmistakable on the blue lyrics canvas */
+body.lyr .lyr-empty{
+  color:#f8fbff;
+  opacity:1;
+  font-weight:700;
+  text-shadow:0 3px 5px rgba(8,22,58,.72),0 0 18px rgba(8,22,58,.42);
+  filter:brightness(1.18) contrast(1.18);
+}
+
+
+/* Brighten only the music-note reaction. Leave every other reaction untouched. */
+.reacts button[data-r="🎶"]{
+  filter:brightness(1.55) contrast(1.18) saturate(1.25);
+  text-shadow:0 0 5px rgba(255,255,255,.72),0 1px 3px rgba(20,35,75,.28);
+}
+
 </style>
 </head>
 <body>
@@ -2067,12 +2111,15 @@ async function duotuneLoadChat(){
 
 let lyricsRequestToken=0;
 function lrcParse(song){
-  const clean=x=>String(x||'').replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g,' ').replace(/\b(official|video|audio|lyrics?|lyrical|hd|4k|mv|visuali[sz]er|full song|video song)\b/ig,' ').replace(/\s*[|]\s.*$/,' ').replace(/\s+/g,' ').trim();
+  const clean=x=>String(x||'')
+    .replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g,' ')
+    .replace(/\b(official|video|audio|lyrics?|lyrical|hd|4k|mv|visuali[sz]er|full song|video song)\b/ig,' ')
+    .replace(/\s+/g,' ').trim();
   const raw=clean(song?.title||'');
   const channel=String(song?.artist||'').replace(/\s*-\s*Topic$/i,'').replace(/VEVO$/i,'').replace(/\s*(official|music)$/i,'').trim();
-  // YouTube titles often start with a movie/album name, not the artist.
-  // Search both the full cleaned title and the final title after a separator.
-  const parts=raw.split(/\s+[-–—:]\s+/).map(x=>x.trim()).filter(Boolean);
+  // Treat common YouTube title separators as possible boundaries, then test
+  // each candidate by exact normalized track-name equality only.
+  const parts=raw.split(/\s+(?:[-–—:|])\s+/).map(x=>x.trim()).filter(Boolean);
   const candidates=[parts.length>1?parts[parts.length-1]:'',raw].filter(Boolean);
   const titleCandidates=[...new Map(candidates.map(x=>[x.toLocaleLowerCase(),x])).values()];
   return {title:titleCandidates[0]||raw,titleCandidates,artist:channel,channel,full:raw};
@@ -2083,60 +2130,71 @@ async function duotuneFetchLyrics(song,keep){
   if(!song?.title)return;
   const p=lrcParse(song), dur=Number(song.dur>0?song.dur:(S.dur>0?S.dur:0));
   const H={headers:{'X-User-Agent':'DUOTUNE/1.0 (https://duotune.vercel.app)'}};
-  const norm=x=>String(x||'').normalize('NFKD').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
-  const titleScore=(record)=>{
-    const got=norm(record.trackName); if(!got)return 0;
-    let best=0;
-    for(const candidate of p.titleCandidates){
-      const want=norm(candidate); if(!want)continue;
-      if(got===want)best=Math.max(best,100);
-      else if(got.includes(want)||want.includes(got))best=Math.max(best,Math.min(82,55+Math.min(got.length,want.length)/4));
-    }
-    return best;
-  };
+  const norm=x=>String(x||'').normalize('NFKD').toLocaleLowerCase()
+    .replace(/[\u0300-\u036f]/g,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+  const wantedTitles=new Set(p.titleCandidates.map(norm).filter(Boolean));
   const js=async url=>{
     try{
       let r=await fetch(url,H);
-      if(r.status===429){await new Promise(resolve=>setTimeout(resolve,1200));if(token!==lyricsRequestToken)return null;r=await fetch(url,H);}
+      if(r.status===429){
+        await new Promise(resolve=>setTimeout(resolve,1500));
+        if(token!==lyricsRequestToken)return null;
+        r=await fetch(url,H);
+      }
       return r.ok?await r.json():null;
     }catch(e){return null;}
   };
   try{
-    const queries=[];
-    for(const t of p.titleCandidates)queries.push(t);
-    // Artist is a secondary search hint, never a requirement for finding the song.
-    if(p.artist&&p.title)queries.push((p.title+' '+p.artist).trim());
     const pool=[], seen=new Set();
-    for(const q of queries){
+    // Search the actual selected title first. Artist is only a secondary query hint.
+    for(const title of p.titleCandidates){
       if(token!==lyricsRequestToken)return;
-      const list=await js('https://lrclib.net/api/search?'+new URLSearchParams({q}));
+      const list=await js('https://lrclib.net/api/search?'+new URLSearchParams({q:title}));
       if(Array.isArray(list))for(const item of list){
         const key=String(item.id||`${item.trackName}|${item.artistName}|${item.duration}`);
         if(!seen.has(key)){seen.add(key);pool.push(item);}
       }
-      // Small pause between public API searches to avoid hammering LRCLIB.
-      await new Promise(resolve=>setTimeout(resolve,250));
+      await new Promise(resolve=>setTimeout(resolve,300));
+    }
+    if(p.artist&&p.title){
+      if(token!==lyricsRequestToken)return;
+      const list=await js('https://lrclib.net/api/search?'+new URLSearchParams({q:(p.title+' '+p.artist).trim()}));
+      if(Array.isArray(list))for(const item of list){
+        const key=String(item.id||`${item.trackName}|${item.artistName}|${item.duration}`);
+        if(!seen.has(key)){seen.add(key);pool.push(item);}
+      }
     }
     if(token!==lyricsRequestToken)return;
-    // Only timestamped lyrics are eligible. Match title first, then choose the
-    // closest duration. Artist match breaks ties; duration is not an exact gate.
-    const candidates=pool.filter(x=>x.syncedLyrics&&titleScore(x)>=55);
-    candidates.sort((a,b)=>{
-      const ta=titleScore(a),tb=titleScore(b); if(tb!==ta)return tb-ta;
-      const da=dur&&Number.isFinite(Number(a.duration))?Math.abs(Number(a.duration)-dur):Infinity;
-      const db=dur&&Number.isFinite(Number(b.duration))?Math.abs(Number(b.duration)-dur):Infinity;
-      if(da!==db)return da-db;
-      const artistScore=x=>{const ar=norm(x.artistName),want=norm(p.artist);return ar&&want&&(ar.includes(want)||want.includes(ar))?1:0;};
-      return artistScore(b)-artistScore(a);
+
+    // Never use a vaguely similar/default result. Track name must exactly match
+    // one of the selected song's normalized title candidates.
+    const exactTitleMatches=pool.filter(x=>x.syncedLyrics&&wantedTitles.has(norm(x.trackName)));
+    const withDuration=exactTitleMatches.map(x=>({
+      record:x,
+      delta:dur>0&&Number.isFinite(Number(x.duration))?Math.abs(Number(x.duration)-dur):Infinity,
+      artistMatch:!!(norm(x.artistName)&&norm(p.artist)&&
+        (norm(x.artistName)===norm(p.artist)||norm(x.artistName).includes(norm(p.artist))||norm(p.artist).includes(norm(x.artistName))))
+    }));
+    withDuration.sort((a,b)=>{
+      if(a.delta!==b.delta)return a.delta-b.delta;
+      return Number(b.artistMatch)-Number(a.artistMatch);
     });
-    const record=candidates[0]||null;
+
+    // Same-title recordings with very different lengths are often covers,
+    // remixes, or alternate versions. Avoid showing the wrong timed lyrics.
+    let chosen=withDuration[0]||null;
+    if(chosen&&dur>0&&Number.isFinite(chosen.delta)){
+      const maxDelta=Math.max(20,dur*0.08);
+      if(chosen.delta>maxDelta)chosen=null;
+    }
+    const record=chosen?.record||null;
     if(token!==lyricsRequestToken)return;
     if(record?.syncedLyrics){
       if(keep&&S._lrcRaw===record.syncedLyrics)return;
       DuoTune.ui.setLyrics(record.syncedLyrics);
       if(source)source.textContent='';
     }else if(source&&!keep){
-      source.textContent='Synced lyrics not found for this version';
+      source.textContent='Lyrics Levu Cutie 😟';
     }
   }catch(e){
     console.warn('[DUOTUNE] Lyrics lookup failed',e);
@@ -2459,4 +2517,3 @@ try{store.set(SESSION_KEY,'');}catch(e){}
 <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
-
