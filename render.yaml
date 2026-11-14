@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: duotune-api
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: DUOTUNE_SHARED_PASSWORD
+        sync: false
+      - key: DUOTUNE_ROOM_CODE
+        value: KIRANUU
+      - key: DUOTUNE_ALLOWED_ORIGINS
+        value: https://duotune.vercel.app

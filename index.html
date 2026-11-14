@@ -293,9 +293,9 @@ a.row{color:inherit;text-decoration:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .shake{animation:shake .35s}
 @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-/* audio engine: kept at full size, painted BEHIND the app so it is never seen, but never hidden/offscreen so playback is not throttled */
-#duotune-audio-deck{position:absolute;left:0;bottom:0;width:356px;height:200px;z-index:-1;pointer-events:none;overflow:hidden}
-#duotune-audio-deck #ytplayer{width:100%;height:100%}
+/* Browser-native audio element: no visible player chrome, no layout impact. */
+#duotune-audio-deck{position:fixed;left:0;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;z-index:-1}
+#duotune-audio-deck audio{width:1px;height:1px}
 #yt-status{display:none}
 @media (prefers-reduced-motion:reduce){*:not(.rx){animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
@@ -864,10 +864,10 @@ body.kb .msgwrap,body.kb .dock{transition:none}
   </div>
   <div class="toast" id="toast" role="status"></div>
 
-  <!-- Audio engine (YouTube IFrame). Full size, painted behind the app so it is never visible. -->
+  <!-- Browser-native audio engine. Kept outside the visible UI. -->
   <section id="duotune-audio-deck" aria-hidden="true" style="display:none">
     <span id="yt-status"></span>
-    <div id="ytplayer"></div>
+    <audio id="duotune-audio" preload="none"></audio>
   </section>
 </div>
 
@@ -1646,8 +1646,17 @@ const shake=el=>{ if(!el)return; el.classList.remove('shake'); void el.offsetWid
 /* Password login contract: {action:'login', name, password}. */
 async function duotuneLoginRequest(name,password){
   await duotunePrepareAuth();
-  const {data,error}=await duotuneSupabase.functions.invoke('duotune-login',{body:{action:'login',name,password}});
-  if(error) throw new Error(data?.error||error.message||'Could not sign in.');
+  const {data:sessionData,error:sessionError}=await duotuneSupabase.auth.getSession();
+  if(sessionError) throw sessionError;
+  const accessToken=sessionData.session?.access_token;
+  if(!accessToken) throw new Error('Your private device session expired. Please try again.');
+  const response=await fetch(DUOTUNE_API_BASE+'/auth/login',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+accessToken},
+    body:JSON.stringify({action:'login',name,password})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(data?.error||'Could not sign in.');
   if(!data?.success) throw new Error(data?.error||data?.message||'Incorrect password');
   if(data.userId&&data.userId!==S.authUserId) throw new Error('Login identity does not match this device.');
   if(data.name&&data.name.toLowerCase()!==name.toLowerCase()) throw new Error('Login name does not match.');
@@ -1695,6 +1704,9 @@ $('#welcomeForm').onsubmit=async e=>{
    ========================================================================== */
 const DUOTUNE_SUPABASE_URL = 'https://daqmareanfmfbqqqtbft.supabase.co';
 const DUOTUNE_SUPABASE_KEY = 'sb_publishable_-sFmi0TkGbAwSmzLbXF4GA_t7-iCurd';
+// Set window.DUOTUNE_API_BASE before this app script when the API is hosted separately.
+// The default /api works when your host reverse-proxies this path to the Node API.
+const DUOTUNE_API_BASE = String(window.DUOTUNE_API_BASE || '/api').replace(/\/+$/,'');
 
 let duotuneSupabase = null;
 let duotuneChannel = null;
@@ -1861,28 +1873,12 @@ async function duotuneConnect({name,code,login}){
   }
 }
 
-/* ---------- actual YouTube playback ---------- */
+/* ---------- browser-native audio playback (InnerTube stream resolver) ---------- */
 let ytPlayer = null, ytReady = false, ytProgressTimer = null, ytRemoteAction = false;
+let ytAudio = null, ytLoadToken = 0, ytDesiredPlaying = false, ytCurrentVideoId = null, ytResolving = false;
+let ytCurrentStartSeconds = 0, ytLastResolvedAt = 0;
+const YT = { PlayerState: { ENDED:0, PLAYING:1, PAUSED:2, BUFFERING:3, CUED:5 } };
 const ytStatus = (message) => { const el=$('#yt-status'); if(el) el.textContent=message; };
-function duotuneSetMediaSession(song){
-  if(!('mediaSession' in navigator) || !song)return;
-  try{
-    if('MediaMetadata' in window) navigator.mediaSession.metadata=new MediaMetadata({
-      title:String(song.title||'♡'),artist:String(song.artist||''),album:'',
-      artwork:song.img?[{src:song.img,sizes:'512x512',type:'image/jpeg'}]:[]
-    });
-    const actions={
-      play:()=>{if(ytReady&&ytPlayer)ytPlayer.playVideo();},
-      pause:()=>{if(ytReady&&ytPlayer)ytPlayer.pauseVideo();},
-      previoustrack:()=>DuoTune.emit('player:prev',{}),
-      nexttrack:()=>DuoTune.emit('player:next',{}),
-      seekbackward:d=>{if(ytReady&&ytPlayer)ytPlayer.seekTo(Math.max(0,(ytPlayer.getCurrentTime()||0)-(d.seekOffset||10)),true);},
-      seekforward:d=>{if(ytReady&&ytPlayer)ytPlayer.seekTo((ytPlayer.getCurrentTime()||0)+(d.seekOffset||10),true);}
-    };
-    for(const [name,handler] of Object.entries(actions)){try{navigator.mediaSession.setActionHandler(name,handler);}catch{}}
-  }catch(e){console.debug('[DUOTUNE] Media Session unavailable:',e);}
-}
-
 function ytVideoId(song){
   if(!song) return null;
   const direct=String(song.videoId||'').trim();
@@ -1901,88 +1897,153 @@ function ytVideoId(song){
     return /^[A-Za-z0-9_-]{11}$/.test(id)?id:null;
   }catch{return null;}
 }
-function ytLoadCurrent(autoplay=true){
-  const song=S.queue[S.index], id=ytVideoId(song);
-  if(!song || !id){ ytStatus('No valid YouTube video ID in queue item'); console.warn('[DUOTUNE] Queue item has no YouTube video ID:',song); return; }
-  if(!ytReady){ ytStatus('Preparing player…'); return; }
-  ytStatus('Loading track…');
-  try{
-    if(typeof ytPlayer.loadVideoById!=='function'){ ytStatus('Player is still initializing…'); return; }
-    ytPlayer.loadVideoById({videoId:id});
-    if(!autoplay) ytPlayer.pauseVideo();
-    console.info('[DUOTUNE] Loading YouTube video:',id);
-    setTimeout(()=>{
-      if(!ytReady || !ytPlayer) return;
-      const duration=Number(ytPlayer.getDuration())||0;
-      const state=ytPlayer.getPlayerState();
-      if(duration>0){
-        S.dur=duration; DuoTune.ui.setProgress(ytPlayer.getCurrentTime()||0,duration);
-      }else if(state!==YT.PlayerState.PLAYING && state!==YT.PlayerState.BUFFERING){
-        ytStatus('Waiting for playback · press Play in player');
-      }
-    },2500);
-  }catch(e){ console.warn('[DUOTUNE] YouTube load failed',e); ytStatus('Could not load this track'); }
+async function duotuneResolveAudio(videoId){
+  const data=await duotuneYoutubeRequest({action:'playback',videoId});
+  if(!data?.url || !/^https:\/\//i.test(data.url)) throw new Error('No browser-compatible audio stream was returned.');
+  return data;
 }
-let ytApiReady = false, ytInitStarted = false;
+function ytState(){
+  if(!ytAudio || !ytAudio.src) return ytCurrentVideoId?YT.PlayerState.CUED:YT.PlayerState.PAUSED;
+  if(ytAudio.ended) return YT.PlayerState.ENDED;
+  if(ytAudio.paused) return ytAudio.readyState<2?YT.PlayerState.BUFFERING:YT.PlayerState.PAUSED;
+  if(ytAudio.readyState<3) return YT.PlayerState.BUFFERING;
+  return YT.PlayerState.PLAYING;
+}
+function ytSetPositionState(){
+  try{
+    if(navigator.mediaSession?.setPositionState && Number.isFinite(ytAudio?.duration) && ytAudio.duration>0){
+      navigator.mediaSession.setPositionState({duration:ytAudio.duration,playbackRate:ytAudio.playbackRate||1,position:Math.min(ytAudio.duration,ytAudio.currentTime||0)});
+    }
+  }catch{}
+}
+function ytHandlePlay(){
+  S.playing=true; DuoTune.ui.setPlaying(true); ytStatus('Playing');
+  duotuneSetMediaSession(S.queue[S.index]||S.song); ytSetPositionState();
+  if(!ytRemoteAction && S.isHost) duotuneBroadcast({kind:'player',action:'play',seconds:ytAudio.currentTime||0});
+  if(S.queue[S.index]) duotuneSaveHistory(S.queue[S.index]);
+}
+function ytHandlePause(){
+  if(!ytAudio || ytAudio.ended) return;
+  S.playing=false; DuoTune.ui.setPlaying(false); ytStatus('Paused');
+  if(!ytRemoteAction && S.isHost) duotuneBroadcast({kind:'player',action:'pause',seconds:ytAudio.currentTime||0});
+}
+function ytSetMediaSession(song){
+  if(!('mediaSession' in navigator) || !song)return;
+  try{
+    if('MediaMetadata' in window) navigator.mediaSession.metadata=new MediaMetadata({
+      title:String(song.title||'♡'),artist:String(song.artist||''),album:'',
+      artwork:song.img?[{src:song.img,sizes:'512x512',type:'image/jpeg'}]:[]
+    });
+    const actions={
+      play:()=>{if(ytReady&&ytPlayer)ytPlayer.playVideo();},
+      pause:()=>{if(ytReady&&ytPlayer)ytPlayer.pauseVideo();},
+      previoustrack:()=>DuoTune.emit('player:prev',{}),
+      nexttrack:()=>DuoTune.emit('player:next',{}),
+      seekbackward:d=>{if(ytReady&&ytPlayer)ytPlayer.seekTo(Math.max(0,(ytPlayer.getCurrentTime()||0)-(d.seekOffset||10)),true);},
+      seekforward:d=>{if(ytReady&&ytPlayer)ytPlayer.seekTo((ytPlayer.getCurrentTime()||0)+(d.seekOffset||10),true);}
+    };
+    for(const [name,handler] of Object.entries(actions)){try{navigator.mediaSession.setActionHandler(name,handler);}catch{}}
+  }catch(e){console.debug('[DUOTUNE] Media Session unavailable:',e);}
+}
 function ytInitPlayer(){
-  if(!S.code) return;
+  if(!S.code || ytInitStarted) return;
   const deck=$('#duotune-audio-deck');
   if(deck) deck.style.display='block';
-  if(!ytApiReady || ytInitStarted || !window.YT || !YT.Player) return;
+  ytAudio=$('#duotune-audio');
+  if(!ytAudio) { ytStatus('Audio element is unavailable'); return; }
   ytInitStarted=true;
-  ytStatus('Creating player…');
-  ytPlayer = new YT.Player('ytplayer',{
-    width:'100%',height:'100%',
-    playerVars:{playsinline:1,rel:0,iv_load_policy:3,origin:location.origin},
-    events:{
-      onReady:()=>{
-        ytReady=true; try{ytPlayer.setVolume(+$('#vol').value);}catch{} ytStatus('Player ready · add a track');duotuneStartSyncHeartbeat();
-        console.info('[DUOTUNE] YouTube player ready');
-        if(S.index>=0) ytLoadCurrent(false);
-        clearInterval(ytProgressTimer);
-        ytProgressTimer=setInterval(()=>{
-          if(!ytReady || !ytPlayer || typeof ytPlayer.getCurrentTime!=='function') return;
-          const duration=Number(ytPlayer.getDuration())||0, position=Number(ytPlayer.getCurrentTime())||0;
-          if(duration>0){S.dur=duration;S.pos=position;DuoTune.ui.setProgress(position,duration);
-            if(S.song && !S._lyricsDurationChecked){S._lyricsDurationChecked=true;S.song.dur=duration;duotuneFetchLyrics(S.song,true);}
-          }
-        },1000);
-      },
-      onStateChange:(event)=>{
-        if(event.data===YT.PlayerState.PLAYING){
-          const duration=Number(ytPlayer.getDuration())||0;
-          if(duration>0){S.dur=duration;DuoTune.ui.setProgress(ytPlayer.getCurrentTime(),duration);}
-          S.playing=true; DuoTune.ui.setPlaying(true); ytStatus('Playing');
-          duotuneSetMediaSession(S.queue[S.index]||S.song);
-          try{if(navigator.mediaSession?.setPositionState){const d=Number(ytPlayer.getDuration())||0;if(d>0)navigator.mediaSession.setPositionState({duration:d,playbackRate:1,position:Math.min(d,Number(ytPlayer.getCurrentTime())||0)});}}catch{}
-          if(!ytRemoteAction && S.isHost) duotuneBroadcast({kind:'player',action:'play',seconds:ytPlayer.getCurrentTime()});
-          if(S.queue[S.index]) duotuneSaveHistory(S.queue[S.index]);
-        }else if(event.data===YT.PlayerState.PAUSED){
-          S.playing=false; DuoTune.ui.setPlaying(false); ytStatus('Paused');
-          if(!ytRemoteAction && S.isHost) duotuneBroadcast({kind:'player',action:'pause',seconds:ytPlayer.getCurrentTime()});
-        }else if(event.data===YT.PlayerState.ENDED){
-          ytStatus('Track ended');
-          if(!ytRemoteAction) DuoTune.emit('player:next',{});
-        }else if(event.data===YT.PlayerState.BUFFERING){ytStatus('Buffering…');}
-      },
-      onError:(event)=>{
-        const messages={2:'Invalid video ID',5:'HTML5 playback error',100:'Video not found or private',101:'Embedding disabled by owner',150:'Embedding disabled by owner',153:'Player identity/referrer error'};
-        const reason=messages[event.data]||('YouTube error '+event.data);
-        ytStatus(reason); console.error('[DUOTUNE] YouTube player error:',event.data,reason);
-        toast(reason+'. Try another track.');
-      },
-      onAutoplayBlocked:()=>{
-        ytStatus('Autoplay blocked · press Play');
-        toast('Browser blocked autoplay. Tap Play in the player once.');
-      }
-    }
+  ytAudio.preload='auto';
+  ytAudio.volume=Math.max(0,Math.min(1,(Number($('#vol')?.value)||75)/100));
+  ytPlayer={
+    loadVideoById:({videoId,startSeconds=0}={})=>ytLoadAudio(videoId,startSeconds,true).catch(error=>{console.warn('[DUOTUNE] Audio stream resolution failed',error);toast(error.message||'Could not load this track');}),
+    playVideo:()=>{ytDesiredPlaying=true;if(!ytAudio.src){if(ytCurrentVideoId&&!ytResolving)ytLoadAudio(ytCurrentVideoId,ytAudio.currentTime||ytCurrentStartSeconds,true).catch(error=>{console.warn(error);toast(error.message||'Could not start playback');});return;}const p=ytAudio.play();if(p?.catch)p.catch(ytAutoplayFailure);},
+    pauseVideo:()=>{ytDesiredPlaying=false;ytAudio.pause();},
+    seekTo:(seconds)=>{const target=Math.max(0,Number(seconds)||0);if(Number.isFinite(ytAudio.duration)&&ytAudio.duration>0)ytAudio.currentTime=Math.min(target,ytAudio.duration);else ytCurrentStartSeconds=target;},
+    getCurrentTime:()=>Number(ytAudio.currentTime)||0,
+    getDuration:()=>Number(ytAudio.duration)||Number(S.dur)||0,
+    getPlayerState:()=>ytState(),
+    setVolume:(value)=>{ytAudio.volume=Math.max(0,Math.min(1,(Number(value)||0)/100));},
+    stopVideo:()=>{ytDesiredPlaying=false;ytAudio.pause();try{ytAudio.removeAttribute('src');ytAudio.load();}catch{}ytCurrentVideoId=null;S.pos=0;},
+  };
+  ytAudio.addEventListener('loadedmetadata',()=>{
+    if(Number.isFinite(ytAudio.duration)&&ytAudio.duration>0){S.dur=ytAudio.duration;DuoTune.ui.setProgress(ytAudio.currentTime||0,S.dur);}
+    const start=Math.max(0,ytCurrentStartSeconds||0);if(start>0){try{ytAudio.currentTime=Math.min(start,ytAudio.duration||start);}catch{}}
+    if(ytDesiredPlaying){const p=ytAudio.play();if(p?.catch)p.catch(ytAutoplayFailure);}
   });
+  ytAudio.addEventListener('play',ytHandlePlay);
+  ytAudio.addEventListener('playing',()=>{ytStatus('Playing');S.playing=true;DuoTune.ui.setPlaying(true);});
+  ytAudio.addEventListener('pause',ytHandlePause);
+  ytAudio.addEventListener('waiting',()=>ytStatus('Buffering…'));
+  ytAudio.addEventListener('stalled',()=>ytStatus('Connection stalled · waiting…'));
+  ytAudio.addEventListener('ended',()=>{S.playing=false;DuoTune.ui.setPlaying(false);ytStatus('Track ended');if(!ytRemoteAction)DuoTune.emit('player:next',{});});
+  ytAudio.addEventListener('timeupdate',()=>{
+    const duration=Number(ytAudio.duration)||0,position=Number(ytAudio.currentTime)||0;
+    if(duration>0){S.dur=duration;S.pos=position;DuoTune.ui.setProgress(position,duration);ytSetPositionState();}
+  });
+  ytAudio.addEventListener('durationchange',()=>{
+    const duration=Number(ytAudio.duration)||0;if(duration>0){S.dur=duration;DuoTune.ui.setProgress(ytAudio.currentTime||0,duration);}
+  });
+  ytAudio.addEventListener('error',()=>{
+    const code=ytAudio.error?.code;
+    const message=code===2?'Network error while loading audio':code===3?'Audio decoding failed':code===4?'This audio format is not supported':'Audio playback failed';
+    ytStatus(message);console.warn('[DUOTUNE] Browser audio error:',code,message);
+    if(ytCurrentVideoId && Date.now()-ytLastResolvedAt>5000){ytStatus('Refreshing audio source…');ytLoadAudio(ytCurrentVideoId,ytAudio.currentTime||0,ytDesiredPlaying,true).catch(()=>{});}
+    else toast(message+'. Try another track.');
+  });
+  ytReady=true;
+  try{ytPlayer.setVolume(+$('#vol').value);}catch{}
+  ytStatus('Audio engine ready · add a track');
+  duotuneStartSyncHeartbeat();
+  console.info('[DUOTUNE] Browser-native audio engine ready');
+  if(S.index>=0) ytLoadCurrent(false);
+  clearInterval(ytProgressTimer);
+  ytProgressTimer=setInterval(()=>{
+    if(!ytReady||!ytAudio)return;
+    const duration=Number(ytAudio.duration)||0,position=Number(ytAudio.currentTime)||0;
+    if(duration>0){S.dur=duration;S.pos=position;DuoTune.ui.setProgress(position,duration);}
+  },1000);
 }
-window.onYouTubeIframeAPIReady = function(){
-  ytApiReady=true;
-  if(S.code) ytInitPlayer();
-};
-
+let ytInitStarted=false;
+function ytAutoplayFailure(error){
+  if(error?.name==='NotAllowedError'){
+    ytStatus('Ready · press Play to start');
+    DuoTune.ui.setPlaying(false);S.playing=false;
+  }else{
+    console.warn('[DUOTUNE] Audio play request failed:',error);
+    ytStatus('Could not start playback · press Play to retry');
+  }
+}
+async function ytLoadAudio(videoId,startSeconds=0,autoplay=true,forceRefresh=false){
+  if(!/^[A-Za-z0-9_-]{11}$/.test(String(videoId||'')))throw new Error('Invalid YouTube video ID.');
+  if(!ytReady||!ytAudio)throw new Error('Audio engine is still initializing.');
+  const token=++ytLoadToken;
+  ytCurrentVideoId=videoId;ytCurrentStartSeconds=Math.max(0,Number(startSeconds)||0);ytDesiredPlaying=!!autoplay;ytResolving=true;
+  ytStatus('Resolving audio stream…');
+  if(!forceRefresh){ytAudio.pause();}
+  try{
+    const stream=await duotuneResolveAudio(videoId);
+    if(token!==ytLoadToken)return;
+    ytResolving=false;ytLastResolvedAt=Date.now();
+    ytAudio.src=stream.url;
+    ytAudio.load();
+    if(stream.duration>0){S.dur=stream.duration;}
+    ytStatus('Loading audio…');
+    // The loadedmetadata handler applies the requested seek offset before play.
+    // Browsers may still require a fresh user gesture after stream resolution.
+  }catch(error){
+    if(token===ytLoadToken){ytResolving=false;ytDesiredPlaying=false;S.playing=false;DuoTune.ui.setPlaying(false);ytStatus(error.message||'Could not resolve audio');}
+    throw error;
+  }
+}
+function ytLoadCurrent(autoplay=true){
+  const song=S.queue[S.index],id=ytVideoId(song);
+  if(!song||!id){ytStatus('No valid YouTube video ID in queue item');console.warn('[DUOTUNE] Queue item has no YouTube video ID:',song);return;}
+  if(!ytReady){ytStatus('Preparing audio engine…');return;}
+  ytStatus('Loading track…');
+  ytLoadAudio(id,0,autoplay).then(()=>{
+    if(S.queue[S.index]&&S.queue[S.index].dur<=0&&S.dur>0)S.queue[S.index].dur=S.dur;
+  }).catch(error=>{console.warn('[DUOTUNE] Audio load failed',error);toast(error.message||'Could not load this track');});
+}
 let syncHeartbeat=null;
 function duotuneStartSyncHeartbeat(){
   clearInterval(syncHeartbeat);
@@ -1998,10 +2059,8 @@ function duotuneApplySync(p){
   const song=S.queue[S.index],id=ytVideoId(song);
   if(id!==p.videoId){
     if(song){song.videoId=p.videoId;song.id=p.videoId;}
-    ytRemote(()=>{
-      ytPlayer.loadVideoById({videoId:p.videoId,startSeconds:Math.max(0,p.seconds||0)});
-      if(p.playing) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
-    });
+    ytRemote(()=>ytPlayer.loadVideoById({videoId:p.videoId,startSeconds:Math.max(0,p.seconds||0)}));
+    if(!p.playing)ytRemote(()=>ytPlayer.pauseVideo());
     return;
   }
   const local=Number(ytPlayer.getCurrentTime())||0,remote=Number(p.seconds)||0;
@@ -2010,9 +2069,8 @@ function duotuneApplySync(p){
   if(p.playing&&!playing)ytRemote(()=>ytPlayer.playVideo());
   if(!p.playing&&playing)ytRemote(()=>ytPlayer.pauseVideo());
 }
-
 function ytRemote(fn){
-  if(!ytReady || !ytPlayer) return;
+  if(!ytReady||!ytPlayer)return;
   ytRemoteAction=true;
   try{fn();}finally{setTimeout(()=>{ytRemoteAction=false;},900);}
 }
@@ -2146,9 +2204,17 @@ async function duotuneFetchLyrics(song,keep){
 
 async function duotuneYoutubeRequest(payload){
   if(!duotuneSupabase)throw new Error('Connect to the room first.');
-  const {data,error}=await duotuneSupabase.functions.invoke('duotune-youtube',{body:payload});
-  if(error)throw new Error('YouTube service is not configured yet. The YouTube service is not set up yet.');
-  if(data?.error)throw new Error(data.error);
+  const {data:sessionData,error:sessionError}=await duotuneSupabase.auth.getSession();
+  if(sessionError)throw sessionError;
+  const accessToken=sessionData.session?.access_token;
+  if(!accessToken)throw new Error('Your DUOTUNE session expired. Rejoin the room and try again.');
+  const response=await fetch(DUOTUNE_API_BASE+'/youtube',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+accessToken},
+    body:JSON.stringify(payload)
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||data?.error)throw new Error(data?.error||'YouTube request failed. Try again shortly.');
   return data;
 }
 async function duotuneImportYouTubePlaylist(url){
@@ -2456,7 +2522,6 @@ function runMock(){
 /* Login is intentionally required whenever the site is opened. */
 try{store.set(SESSION_KEY,'');}catch(e){}
 </script>
-<script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
 
