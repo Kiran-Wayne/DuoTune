@@ -2066,6 +2066,67 @@ async function duotuneLoadChat(){
 }
 
 let lyricsRequestToken=0;
+
+// ===== DUOTUNE: Indic lyrics transliteration =====
+let duoSanscriptPromise = null;
+
+function duoLoadSanscript(){
+  if(window.Sanscript?.t) return Promise.resolve(window.Sanscript);
+  if(duoSanscriptPromise) return duoSanscriptPromise;
+
+  duoSanscriptPromise = new Promise((resolve,reject)=>{
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@indic-transliteration/sanscript@1.3.3/sanscript.js';
+    script.onload = () => {
+      if(window.Sanscript?.t) resolve(window.Sanscript);
+      else reject(new Error('Transliteration library did not initialize'));
+    };
+    script.onerror = () => reject(new Error('Could not load transliteration library'));
+    document.head.appendChild(script);
+  });
+
+  return duoSanscriptPromise;
+}
+
+function duoRomanizeLrc(raw){
+  const Sanscript = window.Sanscript;
+  if(!Sanscript?.t) return raw;
+
+  return String(raw || '').split(/\r?\n/).map(line=>{
+    // Preserve every LRC timestamp exactly as supplied.
+    const match = line.match(/^((?:\[\d{1,2}:\d{2}(?:[.:]\d{1,3})?\])+)(.*)$/);
+    if(!match) return line;
+
+    const prefix = match[1];
+    const lyricText = match[2];
+
+    // Telugu lyrics remain in Telugu script.
+    if(/[\u0C00-\u0C7F]/.test(lyricText)) return line;
+
+    let from = '';
+    let to = 'itrans';
+
+    if(/[\u0900-\u097F]/.test(lyricText)){
+      from = 'devanagari';
+    }else if(/[\u0B80-\u0BFF]/.test(lyricText)){
+      from = 'tamil';
+      to = 'itrans_dravidian';
+    }else if(/[\u0D00-\u0D7F]/.test(lyricText)){
+      from = 'malayalam';
+      to = 'itrans_dravidian';
+    }
+
+    if(!from) return line;
+
+    try{
+      return prefix + Sanscript.t(lyricText,from,to);
+    }catch(error){
+      console.warn('[DUOTUNE] Transliteration failed:',error);
+      return line;
+    }
+  }).join('\n');
+}
+
 function lrcParse(song){
   const clean=x=>String(x||'').replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g,' ').replace(/\b(official|video|audio|lyrics?|lyrical|hd|4k|mv|visuali[sz]er|full song|video song)\b/ig,' ').replace(/\s*[|]\s.*$/,' ').replace(/\s+/g,' ').trim();
   const raw=clean(song?.title||'');
@@ -2133,7 +2194,20 @@ async function duotuneFetchLyrics(song,keep){
     if(token!==lyricsRequestToken)return;
     if(record?.syncedLyrics){
       if(keep&&S._lrcRaw===record.syncedLyrics)return;
-      DuoTune.ui.setLyrics(record.syncedLyrics);
+
+      let displayLyrics = record.syncedLyrics;
+      try{
+        await duoLoadSanscript();
+        // Ignore a late transliteration result if the current song changed.
+        if(token!==lyricsRequestToken)return;
+        displayLyrics = duoRomanizeLrc(record.syncedLyrics);
+      }catch(error){
+        console.warn('[DUOTUNE] Transliteration unavailable:',error);
+        // Keep the original lyrics usable if the library cannot load.
+      }
+
+      if(token!==lyricsRequestToken)return;
+      DuoTune.ui.setLyrics(displayLyrics);
       if(source)source.textContent='';
     }else if(source&&!keep){
       source.textContent='Synced lyrics not found for this version';
