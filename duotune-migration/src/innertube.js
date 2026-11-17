@@ -4,8 +4,8 @@ let clientPromise;
 let playbackClientPromise;
 
 /**
- * Shared anonymous InnerTube session. Search and public playlist metadata only;
- * playback continues through YouTube's supported IFrame Player in the browser.
+ * Shared anonymous InnerTube session for YouTube Music search and public playlist metadata.
+ * It does not provide a supported browser audio-only stream resolver.
  */
 export function getInnerTube() {
   if (!clientPromise) {
@@ -52,8 +52,26 @@ export function toLegacySearchItem(item) {
   const thumbnail = bestThumbnail(item) || `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
   const duration = Number(item?.duration?.seconds || item?.duration_seconds || 0) || 0;
 
+  const album = textValue(item?.album?.name || item?.album || item?.album_name);
+  const musicVideoType = textValue(item?.music_video_type || item?.musicVideoType);
+
   return {
     id: { videoId },
+    videoId,
+    title,
+    artist,
+    album,
+    duration,
+    musicVideoType,
+    recording: {
+      provider: 'youtube-music',
+      videoId,
+      title,
+      artist,
+      album,
+      duration,
+      musicVideoType,
+    },
     snippet: {
       title,
       channelTitle: artist,
@@ -105,3 +123,4 @@ export function getPlaybackInnerTube() {
   }
   return playbackClientPromise;
 }
+
