@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 import { requireSupabaseUser } from '../middleware/auth.js';
 import {
@@ -26,7 +25,6 @@ function cleanString(value, max) {
 
 function cacheGet(cache, key) {
   const entry = cache.get(key);
-
   if (!entry) return null;
 
   if (entry.expiresAt <= Date.now()) {
@@ -38,7 +36,7 @@ function cacheGet(cache, key) {
 }
 
 function cacheSet(cache, key, value) {
-  cache.set(key, {
+  cache.set(cache, {
     value,
     expiresAt: Date.now() + CACHE_TTL,
   });
@@ -58,8 +56,6 @@ function normalizeTrackText(value) {
 }
 
 function musicSearchItems(result) {
-  // Keep discovery music-first: never mix generic YouTube video results into
-  // the song search response. The UI expects song entities from YouTube Music.
   return Array.isArray(result?.songs?.contents)
     ? result.songs.contents
     : [];
@@ -69,9 +65,8 @@ router.post('/', requireSupabaseUser, async (req, res) => {
   const action = cleanString(req.body?.action, 20);
 
   try {
-
     // ==========================================
-    // STRICT SYNCED LYRICS LOOKUP
+    // RECORDING-AWARE LYRICS LOOKUP
     // ==========================================
 
     if (action === 'lyrics') {
@@ -80,72 +75,264 @@ router.post('/', requireSupabaseUser, async (req, res) => {
       const album = cleanString(req.body?.album, 180);
       const duration = Math.round(Number(req.body?.duration) || 0);
 
-      if (!title || !artist || duration < 1 || duration > 3600) {
+      if (!title) {
         return res.status(400).json({
-          error: 'Exact title, artist and track duration are required for synced lyrics.',
+          error: 'A song title is required to find lyrics.',
         });
       }
 
-      const cacheKey = [title, artist, album, duration].map(normalizeTrackText).join('|');
+      if (duration < 0 || duration > 3600) {
+        return res.status(400).json({
+          error: 'Track duration is invalid.',
+        });
+      }
+
+      const cacheKey = [title, artist, album, duration]
+        .map(normalizeTrackText)
+        .join('|');
+
       const cached = cacheGet(lyricsCache, cacheKey);
       if (cached) return res.json(cached);
 
-      const params = new URLSearchParams({
-        track_name: title,
-        artist_name: artist,
-        duration: String(duration),
-      });
-      if (album) params.set('album_name', album);
+      const stripNoise = (value) => String(value || '')
+        .replace(/[([{].*?[)\]}]/g, ' ')
+        .replace(/\b(official|video|audio|lyrics?|lyrical|hd|4k|mv|visuali[sz]er|full song)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-      const response = await fetch(`https://lrclib.net/api/get?${params}`, {
-        headers: {
-          'User-Agent': 'DuoTune/1.1 (https://github.com/Kiran-Wayne/DuoTune)',
-          'Accept': 'application/json',
-        },
-        signal: AbortSignal.timeout(10000),
-      });
+      const titleParts = title
+        .split(/\s+[-–—:]\s+/)
+        .map(stripNoise)
+        .filter(Boolean);
 
-      if (response.status === 404) {
-        const miss = { found: false, synced: false, reason: 'No exact synced-lyrics match was found.' };
-        cacheSet(lyricsCache, cacheKey, miss);
-        return res.json(miss);
-      }
-      if (response.status === 429) {
-        return res.status(429).json({ error: 'Lyrics service is rate-limiting requests. Please wait a moment.' });
-      }
-      if (!response.ok) throw new Error(`LRCLIB returned HTTP ${response.status}`);
+      const titleCandidates = [
+        ...new Set([
+          stripNoise(title),
+          ...titleParts,
+        ].filter(Boolean)),
+      ];
 
-      const record = await response.json();
-      const exactTitle = normalizeTrackText(record.trackName || record.name) === normalizeTrackText(title);
-      const exactArtist = normalizeTrackText(record.artistName) === normalizeTrackText(artist);
-      const exactAlbum = !album || normalizeTrackText(record.albumName) === normalizeTrackText(album);
-      const durationDifference = Math.abs(Number(record.duration) - duration);
-      const syncedLyrics = typeof record.syncedLyrics === 'string' ? record.syncedLyrics.trim() : '';
-      const exactMatch = exactTitle && exactArtist && exactAlbum && durationDifference <= 2;
+      // Search using song title, artist and movie/album combinations.
+      const queries = [
+        ...new Set([
+          ...titleCandidates,
+          ...(artist
+            ? titleCandidates.map((t) => `${t} ${artist}`)
+            : []),
+          ...(album
+            ? titleCandidates.map((t) => `${t} ${album}`)
+            : []),
+          ...(artist && album
+            ? titleCandidates.map((t) => `${t} ${artist} ${album}`)
+            : []),
+        ].map((q) => q.trim()).filter(Boolean)),
+      ].slice(0, 8);
 
-      // Never substitute a cover, alternate release, plain lyrics, or a loose title match.
-      const result = exactMatch && syncedLyrics
-        ? {
-            found: true,
-            synced: true,
-            hasWordSync: Boolean(record.hasWordSync),
-            syncedLyrics,
-            match: {
-              id: record.id,
-              title: record.trackName || record.name,
-              artist: record.artistName,
-              album: record.albumName || '',
-              duration: Number(record.duration),
-              durationDifference,
-            },
+      const headers = {
+        'User-Agent': 'DuoTune/1.2 (https://github.com/Kiran-Wayne/DuoTune)',
+        'Accept': 'application/json',
+      };
+
+      const pool = new Map();
+
+      for (const query of queries) {
+        const params = new URLSearchParams({ q: query });
+
+        const response = await fetch(
+          `https://lrclib.net/api/search?${params}`,
+          {
+            headers,
+            signal: AbortSignal.timeout(10000),
           }
-        : {
-            found: false,
-            synced: false,
-            reason: !exactMatch
-              ? 'Lyrics metadata did not match this exact recording.'
-              : 'This recording has no timestamped lyrics.',
+        );
+
+        if (response.status === 429) {
+          return res.status(429).json({
+            error: 'Lyrics service is rate-limiting requests. Please wait a moment.',
+          });
+        }
+
+        if (!response.ok) {
+          if (response.status >= 500) {
+            throw new Error(`LRCLIB returned HTTP ${response.status}`);
+          }
+          continue;
+        }
+
+        const records = await response.json();
+
+        if (Array.isArray(records)) {
+          for (const record of records) {
+            const key = String(
+              record.id ||
+              [
+                record.trackName,
+                record.artistName,
+                record.albumName,
+                record.duration,
+              ].join('|')
+            );
+
+            if (!pool.has(key)) {
+              pool.set(key, record);
+            }
+          }
+        }
+      }
+
+      const scoreTitle = (record) => {
+        const found = normalizeTrackText(
+          record.trackName || record.name
+        );
+
+        if (!found) return 0;
+
+        let score = 0;
+
+        for (const candidate of titleCandidates) {
+          const wanted = normalizeTrackText(candidate);
+          if (!wanted) continue;
+
+          if (found === wanted) {
+            score = Math.max(score, 100);
+          } else if (
+            found.includes(wanted) ||
+            wanted.includes(found)
+          ) {
+            score = Math.max(
+              score,
+              Math.min(
+                82,
+                55 + Math.min(found.length, wanted.length) / 4
+              )
+            );
+          }
+        }
+
+        return score;
+      };
+
+      const scoreArtist = (record) => {
+        const found = normalizeTrackText(record.artistName);
+        const wanted = normalizeTrackText(artist);
+
+        if (!wanted || !found) return 0;
+        if (found === wanted) return 24;
+
+        if (
+          found.includes(wanted) ||
+          wanted.includes(found)
+        ) {
+          return 14;
+        }
+
+        return 0;
+      };
+
+      const scoreAlbum = (record) => {
+        const found = normalizeTrackText(record.albumName);
+        const wanted = normalizeTrackText(album);
+
+        if (!wanted || !found) return 0;
+        if (found === wanted) return 18;
+
+        if (
+          found.includes(wanted) ||
+          wanted.includes(found)
+        ) {
+          return 10;
+        }
+
+        return 0;
+      };
+
+      const candidates = [...pool.values()]
+        .map((record) => {
+          const recordDuration = Number(record.duration);
+
+          const durationDifference =
+            duration > 0 && Number.isFinite(recordDuration)
+              ? Math.abs(recordDuration - duration)
+              : null;
+
+          const titleScore = scoreTitle(record);
+          const artistScore = scoreArtist(record);
+          const albumScore = scoreAlbum(record);
+
+          const durationTolerance =
+            duration > 0
+              ? Math.max(12, duration * 0.05)
+              : Infinity;
+
+          const durationValid =
+            durationDifference === null ||
+            durationDifference <= durationTolerance;
+
+          const durationScore =
+            durationDifference === null
+              ? 0
+              : Math.max(0, 20 - durationDifference * 1.5);
+
+          return {
+            record,
+            titleScore,
+            artistScore,
+            albumScore,
+            durationDifference,
+            durationValid,
+            score:
+              titleScore +
+              artistScore +
+              albumScore +
+              durationScore,
           };
+        })
+        .filter((item) =>
+          item.titleScore >= 55 && item.durationValid
+        )
+        .sort((a, b) => b.score - a.score);
+
+      const best = candidates[0] || null;
+      const record = best?.record;
+
+      const syncedLyrics =
+        typeof record?.syncedLyrics === 'string'
+          ? record.syncedLyrics.trim()
+          : '';
+
+      const plainLyrics =
+        typeof record?.plainLyrics === 'string'
+          ? record.plainLyrics.trim()
+          : '';
+
+      const result =
+        record && (syncedLyrics || plainLyrics)
+          ? {
+              found: true,
+              synced: Boolean(syncedLyrics),
+              hasWordSync: Boolean(record.hasWordSync),
+              syncedLyrics: syncedLyrics || null,
+              plainLyrics: plainLyrics || null,
+              lyrics: syncedLyrics || plainLyrics,
+              match: {
+                id: record.id,
+                title: record.trackName || record.name || '',
+                artist: record.artistName || '',
+                album: record.albumName || '',
+                duration: Number(record.duration) || null,
+                durationDifference: best.durationDifference,
+              },
+              reason: syncedLyrics
+                ? null
+                : 'Only unsynced lyrics are available for this recording.',
+            }
+          : {
+              found: false,
+              synced: false,
+              syncedLyrics: null,
+              plainLyrics: null,
+              reason: 'No sufficiently close lyrics match was found. Try including the movie or album name.',
+            };
 
       cacheSet(lyricsCache, cacheKey, result);
       return res.json(result);
@@ -165,9 +352,7 @@ router.post('/', requireSupabaseUser, async (req, res) => {
       }
 
       const playbackClient = await getPlaybackInnerTube();
-
       const info = await playbackClient.getBasicInfo(videoId);
-
       const status = info?.playability_status;
 
       const formats =
@@ -185,10 +370,7 @@ router.post('/', requireSupabaseUser, async (req, res) => {
         totalFormats: formats.length,
       };
 
-      console.info(
-        '[playback diagnostic]',
-        diagnostic
-      );
+      console.info('[playback diagnostic]', diagnostic);
 
       return res.json({
         diagnostic: true,
@@ -212,7 +394,6 @@ router.post('/', requireSupabaseUser, async (req, res) => {
 
     if (action === 'search') {
       const query = cleanString(req.body?.query, 180);
-
       const parsedMax = Number(req.body?.maxResults) || 12;
 
       const maxResults = Math.max(
@@ -230,12 +411,13 @@ router.post('/', requireSupabaseUser, async (req, res) => {
         `${query.toLocaleLowerCase()}|${maxResults}`;
 
       const cached = cacheGet(searchCache, cacheKey);
-
       if (cached) return res.json(cached);
 
-      // Spotify-style music discovery: ask the YouTube Music song catalog
-      // only. An empty song result stays empty instead of falling back to videos.
-      const result = await music.search(query, { type: 'song' });
+      const result = await music.search(
+        query,
+        { type: 'song' }
+      );
+
       const items = musicSearchItems(result)
         .map(toLegacySearchItem)
         .filter(Boolean);
@@ -246,7 +428,6 @@ router.post('/', requireSupabaseUser, async (req, res) => {
       };
 
       cacheSet(searchCache, cacheKey, response);
-
       return res.json(response);
     }
 
@@ -266,11 +447,7 @@ router.post('/', requireSupabaseUser, async (req, res) => {
         });
       }
 
-      const cached = cacheGet(
-        playlistCache,
-        playlistId
-      );
-
+      const cached = cacheGet(playlistCache, playlistId);
       if (cached) return res.json(cached);
 
       let playlist = await music.getPlaylist(playlistId);
@@ -320,7 +497,6 @@ router.post('/', requireSupabaseUser, async (req, res) => {
       };
 
       cacheSet(playlistCache, playlistId, response);
-
       return res.json(response);
     }
 
@@ -333,11 +509,7 @@ router.post('/', requireSupabaseUser, async (req, res) => {
     });
 
   } catch (error) {
-
-    console.error(
-      '[innertube] request failed:',
-      error
-    );
+    console.error('[innertube] request failed:', error);
 
     const status =
       /private|unavailable|not found/i.test(
@@ -360,4 +532,3 @@ router.post('/', requireSupabaseUser, async (req, res) => {
 });
 
 export default router;
-
