@@ -427,8 +427,7 @@ body.kb .dock{padding-bottom:6px}
 .quote span{color:#fff}
 .reacts button{background:rgba(255,255,255,.55);box-shadow:var(--sh1)}
 
-/* ---- Apple-Music lyrics: smooth word sweep, no halo ---- */
-@property --wp{syntax:'<number>';inherits:false;initial-value:1}
+/* ---- Apple-Music-style timestamped lyrics ---- */
 :root{--spring:cubic-bezier(.22,1,.36,1)}
 .lyrbg{position:absolute;inset:0;opacity:0;transition:opacity .9s var(--e2);pointer-events:none;
   background:radial-gradient(110% 60% at 50% -5%,rgba(179,200,245,.5),transparent 62%),linear-gradient(176deg,#5d85df 0%,#2e59b4 48%,#27457f 100%)}
@@ -442,10 +441,7 @@ body.lyr .l-head .artist{opacity:.75}
   filter:blur(calc(min(var(--d,4),5)*.55px));
   transition:transform .8s var(--spring),opacity .7s var(--e2),filter .8s var(--e2),translate 1.05s var(--spring) calc(var(--k,0)*42ms)}
 .line.active{transform:scale(1);opacity:1;filter:blur(0)}
-.line .w{display:inline-block;--wp:1;color:transparent;-webkit-text-fill-color:transparent;
-  background:linear-gradient(90deg,#fff calc(var(--wp)*114% - 14%),rgba(255,255,255,.42) calc(var(--wp)*114%));
-  -webkit-background-clip:text;background-clip:text;padding-bottom:.08em}
-.line.picked .w{background:#e9edf6;-webkit-background-clip:text;background-clip:text}
+.line.picked{color:#e9edf6}
 body.lyr #lyricsSource{color:#fff;opacity:.9;font-size:17px;font-weight:600;padding:0 26px 18px;letter-spacing:-.01em}
 .lyr-empty{color:rgba(255,255,255,.55);font-size:72px}
 body.lyr .dock{background:rgba(255,255,255,.15);box-shadow:0 -16px 40px -18px rgba(11,26,55,.55),inset 0 1px 0 rgba(255,255,255,.3)}
@@ -874,7 +870,7 @@ body.kb .msgwrap,body.kb .dock{transition:none}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  window.DUOTUNE_API_BASE = 'https://duotune.onrender.com';
+  window.DUOTUNE_API_BASE = 'https://duotune.onrender.com/api';
 </script>
 
 <script>
@@ -1179,7 +1175,7 @@ const setText = (ids, v) => ids.forEach(id => $('#'+id).textContent = v);
 
 DuoTune.ui.setNowPlaying = song => {
   { const rb=$('#recommendations'); if(rb)rb.dataset.loaded=''; }
-  S.song = song; S.pos = 0; S._tAt = performance.now(); S.dur = song?.dur || 0; S.line = -1; S.liked = false; S._lyricsDurationChecked=false;
+  S.song = song; S.pos = 0; S._tAt = performance.now(); S.dur = song?.dur || 0; S.line = -1; S.liked = false; S._lyricsDurationChecked=false; S._lyricsLookupKey='';
   if(!MOCK && song) setTimeout(()=>duotuneFetchLyrics(song),120);
   syncFavHeart();
   setText(['title','title2','title3'], song ? song.title : 'Pick your first song');
@@ -1238,13 +1234,13 @@ DuoTune.ui.setLyrics = raw => {
   S.lrc = parseLrc(raw); S._lrcRaw = raw; S._lineEls = null; S._act = null; S.line = -1; S.quote && clearQuote();
   const box = $('#lyrics');
   box.innerHTML = S.lrc.length
-    ? `<div class="pad"></div>${S.lrc.map((l,i)=>`<div class="line" data-i="${i}" style="--d:4">${esc(l.text).split(/\s+/).map(w=>`<span class="w">${w}</span>`).join(' ')}</div>`).join('')}<div class="pad b"></div>`
+    ? `<div class="pad"></div>${S.lrc.map((l,i)=>`<div class="line" data-i="${i}" style="--d:4">${esc(l.text)}</div>`).join('')}<div class="pad b"></div>`
     : `<div class="lyr-empty">♪</div>`;
   box.scrollTop = 0;
 };
 function updateLine(p=estPos()){
   if (!S.lrc.length) return;
-  let a = -1; for (let i=0;i<S.lrc.length;i++){ if (p >= S.lrc[i].t - 0.15) a = i; else break; }
+  let a = -1; for (let i=0;i<S.lrc.length;i++){ if (p >= S.lrc[i].t) a = i; else break; }
   if (a !== S.line){
     S.line = a;
     const els = S._lineEls || (S._lineEls = $$('#lyrics .line'));
@@ -1253,25 +1249,11 @@ function updateLine(p=estPos()){
       el.style.setProperty('--d', d); el.style.setProperty('--k', Math.min(Math.max(0,i-a),7));
       el.classList.toggle('active', i===a);
       el.classList.toggle('past', a>=0 && i<a);
-      if (i!==a) el.querySelectorAll('.w').forEach(x=>{x.style.removeProperty('--wp');x._v=undefined;});
     });
     S._act = a>=0 ? els[a] : null;
-    S._wEls = S._act ? [...S._act.querySelectorAll('.w')] : []; { let tot=0; const lens=S._wEls.map(x=>x.textContent.length+1); lens.forEach(l=>tot+=l); let c=0; S._wAt=lens.map(l=>{const v=c/Math.max(1,tot); c+=l; return v;}); }
     scrollToLine(false);
   }
-  /* smooth word-by-word sweep: LRCLIB gives line times only, so each word's share is spread over the line's estimated sung length */
-  if (S._act){
-    const L = S.lrc[a], nx = S.lrc[a+1], len = (L.text||'').length;
-    const gap = (nx ? nx.t : L.t+5) - L.t;
-    const sung = Math.max(.8, Math.min(gap*.9, Math.max(1.6, len*.1)));
-    const w = Math.max(0, Math.min(1, (p - L.t)/sung));
-    const ws=S._wEls||[], at=S._wAt||[];
-    for(let k=0;k<ws.length;k++){
-      const s0=at[k], e0=k+1<ws.length?at[k+1]:1;
-      const v=Math.max(0,Math.min(1,(w-s0)/Math.max(.001,e0-s0)));
-      if(Math.abs(v-(ws[k]._v??-1))>.004||v===0||v===1){ if(ws[k]._v!==v){ws[k]._v=v; ws[k].style.setProperty('--wp',v.toFixed(3));} }
-    }
-  }
+  // LRCLIB LRC timestamps are line-level. Do not invent word timings.
 }
 function lineTarget(){
   const box = $('#lyrics'), el = $('#lyrics .line.active') || $('#lyrics .line'); if (!el) return null;
@@ -1506,12 +1488,12 @@ $('#addForm').onsubmit = e => {
 DuoTune.ui.setSearchResults = list => {
   $('#results').innerHTML = (list&&list.length) ? list.map((r,i)=>`
     <button class="row" data-i="${i}"><span class="q-art">${artHTML(r,i+1)}</span>
-    <span class="t"><div class="n">${esc(r.title)}</div><div class="s">${esc(r.artist||'')}</div></span>
+    <span class="t"><div class="n">${esc(r.title)}</div><div class="s">${esc([r.artist,r.album].filter(Boolean).join(' · '))}${r.dur?` · ${fmt(r.dur)}`:''}</div></span>
     <span class="plus">${ico('plus')}</span></button>`).join('') : '<div class="empty">No results</div>';
   $('#results')._list = list;
 };
 $('#results').onclick = e => { const r = e.target.closest('.row'); if(!r) return; const s = $('#results')._list[+r.dataset.i];
-  act('queue:add',{videoId:s.videoId,title:s.title,artist:s.artist,img:s.img},()=>addToQueue({id:s.videoId,title:s.title,artist:s.artist,img:s.img,dur:210})); toast('Up next ♡'); haptic(10); $('#results').innerHTML=''; $('#addInput').value=''; };
+  act('queue:add',{videoId:s.videoId,title:s.title,artist:s.artist,album:s.album||'',dur:s.dur||0,img:s.img,recording:s.recording||null},()=>addToQueue({id:s.videoId,videoId:s.videoId,title:s.title,artist:s.artist,album:s.album||'',dur:s.dur||0,img:s.img,recording:s.recording||null})); toast('Up next ♡'); haptic(10); $('#results').innerHTML=''; $('#addInput').value=''; };
 
 $('#seg').onclick = e => { const b = e.target.closest('button'); if(!b) return;
   $$('#seg button').forEach(x=>x.classList.toggle('on',x===b));
@@ -1879,7 +1861,7 @@ async function duotuneConnect({name,code,login}){
   }
 }
 
-/* ---------- browser-native audio playback (InnerTube stream resolver) ---------- */
+/* ---------- browser-native audio player (provider stream resolver pending) ---------- */
 let ytPlayer = null, ytReady = false, ytProgressTimer = null, ytRemoteAction = false;
 let ytAudio = null, ytLoadToken = 0, ytDesiredPlaying = false, ytCurrentVideoId = null, ytResolving = false;
 let ytCurrentStartSeconds = 0, ytLastResolvedAt = 0;
@@ -1905,6 +1887,10 @@ function ytVideoId(song){
 }
 async function duotuneResolveAudio(videoId){
   const data=await duotuneYoutubeRequest({action:'playback',videoId});
+  if(data?.diagnostic){
+    const status=String(data.playability||'unknown');
+    throw new Error(`The current YouTube stream resolver is blocked (${status}). Music search works, but browser playback needs a compatible, authorized stream provider.`);
+  }
   if(!data?.url || !/^https:\/\//i.test(data.url)) throw new Error('No browser-compatible audio stream was returned.');
   return data;
 }
@@ -1972,7 +1958,7 @@ function ytInitPlayer(){
     stopVideo:()=>{ytDesiredPlaying=false;ytAudio.pause();try{ytAudio.removeAttribute('src');ytAudio.load();}catch{}ytCurrentVideoId=null;S.pos=0;},
   };
   ytAudio.addEventListener('loadedmetadata',()=>{
-    if(Number.isFinite(ytAudio.duration)&&ytAudio.duration>0){S.dur=ytAudio.duration;DuoTune.ui.setProgress(ytAudio.currentTime||0,S.dur);}
+    if(Number.isFinite(ytAudio.duration)&&ytAudio.duration>0){S.dur=ytAudio.duration;DuoTune.ui.setProgress(ytAudio.currentTime||0,S.dur);if(S.song&&!Number(S.song.dur)){S.song.dur=ytAudio.duration;duotuneFetchLyrics(S.song,false);}}
     const start=Math.max(0,ytCurrentStartSeconds||0);if(start>0){try{ytAudio.currentTime=Math.min(start,ytAudio.duration||start);}catch{}}
     if(ytDesiredPlaying){const p=ytAudio.play();if(p?.catch)p.catch(ytAutoplayFailure);}
   });
@@ -2130,81 +2116,44 @@ async function duotuneLoadChat(){
 }
 
 let lyricsRequestToken=0;
-function lrcParse(song){
-  const clean=x=>String(x||'').replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g,' ').replace(/\b(official|video|audio|lyrics?|lyrical|hd|4k|mv|visuali[sz]er|full song|video song)\b/ig,' ').replace(/\s*[|]\s.*$/,' ').replace(/\s+/g,' ').trim();
-  const raw=clean(song?.title||'');
-  const channel=String(song?.artist||'').replace(/\s*-\s*Topic$/i,'').replace(/VEVO$/i,'').replace(/\s*(official|music)$/i,'').trim();
-  // YouTube titles often start with a movie/album name, not the artist.
-  // Search both the full cleaned title and the final title after a separator.
-  const parts=raw.split(/\s+[-–—:]\s+/).map(x=>x.trim()).filter(Boolean);
-  const candidates=[parts.length>1?parts[parts.length-1]:'',raw].filter(Boolean);
-  const titleCandidates=[...new Map(candidates.map(x=>[x.toLocaleLowerCase(),x])).values()];
-  return {title:titleCandidates[0]||raw,titleCandidates,artist:channel,channel,full:raw};
-}
 async function duotuneFetchLyrics(song,keep){
-  const token=++lyricsRequestToken; if(!keep)DuoTune.ui.setLyrics('');
-  const source=$('#lyricsSource'); if(source&&!keep)source.textContent='';
-  if(!song?.title)return;
-  const p=lrcParse(song), dur=Number(song.dur>0?song.dur:(S.dur>0?S.dur:0));
-  const H={headers:{'X-User-Agent':'DUOTUNE/1.0 (https://duotune.vercel.app)'}};
-  const norm=x=>String(x||'').normalize('NFKD').toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
-  const titleScore=(record)=>{
-    const got=norm(record.trackName); if(!got)return 0;
-    let best=0;
-    for(const candidate of p.titleCandidates){
-      const want=norm(candidate); if(!want)continue;
-      if(got===want)best=Math.max(best,100);
-      else if(got.includes(want)||want.includes(got))best=Math.max(best,Math.min(82,55+Math.min(got.length,want.length)/4));
-    }
-    return best;
-  };
-  const js=async url=>{
-    try{
-      let r=await fetch(url,H);
-      if(r.status===429){await new Promise(resolve=>setTimeout(resolve,1200));if(token!==lyricsRequestToken)return null;r=await fetch(url,H);}
-      return r.ok?await r.json():null;
-    }catch(e){return null;}
-  };
+  const token=++lyricsRequestToken;
+  if(!keep)DuoTune.ui.setLyrics('');
+  const source=$('#lyricsSource');
+  if(source&&!keep)source.textContent='Finding exact synced lyrics…';
+  if(!song?.title||!song?.artist){if(source)source.textContent='Track metadata is incomplete';return;}
+
+  // Prefer metadata from the selected YouTube Music song entity. Do not replace
+  // it with YouTube video/oEmbed metadata, which may describe a cover or upload.
+  const duration=Number(song.dur||song.duration||song.recording?.duration||0);
+  if(!Number.isFinite(duration)||duration<1){
+    if(source&&!keep)source.textContent='Waiting for the exact track duration…';
+    return;
+  }
+  const lookupKey=[song.videoId||song.id,song.title,song.artist,song.album,duration].join('|');
+  if(S._lyricsLookupKey===lookupKey)return;
+  S._lyricsLookupKey=lookupKey;
+
   try{
-    const queries=[];
-    for(const t of p.titleCandidates)queries.push(t);
-    // Artist is a secondary search hint, never a requirement for finding the song.
-    if(p.artist&&p.title)queries.push((p.title+' '+p.artist).trim());
-    const pool=[], seen=new Set();
-    for(const q of queries){
-      if(token!==lyricsRequestToken)return;
-      const list=await js('https://lrclib.net/api/search?'+new URLSearchParams({q}));
-      if(Array.isArray(list))for(const item of list){
-        const key=String(item.id||`${item.trackName}|${item.artistName}|${item.duration}`);
-        if(!seen.has(key)){seen.add(key);pool.push(item);}
-      }
-      // Small pause between public API searches to avoid hammering LRCLIB.
-      await new Promise(resolve=>setTimeout(resolve,250));
-    }
-    if(token!==lyricsRequestToken)return;
-    // Only timestamped lyrics are eligible. Match title first, then choose the
-    // closest duration. Artist match breaks ties; duration is not an exact gate.
-    const candidates=pool.filter(x=>x.syncedLyrics&&titleScore(x)>=55);
-    candidates.sort((a,b)=>{
-      const ta=titleScore(a),tb=titleScore(b); if(tb!==ta)return tb-ta;
-      const da=dur&&Number.isFinite(Number(a.duration))?Math.abs(Number(a.duration)-dur):Infinity;
-      const db=dur&&Number.isFinite(Number(b.duration))?Math.abs(Number(b.duration)-dur):Infinity;
-      if(da!==db)return da-db;
-      const artistScore=x=>{const ar=norm(x.artistName),want=norm(p.artist);return ar&&want&&(ar.includes(want)||want.includes(ar))?1:0;};
-      return artistScore(b)-artistScore(a);
+    const result=await duotuneYoutubeRequest({
+      action:'lyrics',
+      title:song.title,
+      artist:song.artist,
+      album:song.album||song.recording?.album||'',
+      duration:Math.round(duration),
     });
-    const record=candidates[0]||null;
     if(token!==lyricsRequestToken)return;
-    if(record?.syncedLyrics){
-      if(keep&&S._lrcRaw===record.syncedLyrics)return;
-      DuoTune.ui.setLyrics(record.syncedLyrics);
-      if(source)source.textContent='';
-    }else if(source&&!keep){
-      source.textContent='Synced lyrics not found for this version';
+    if(result?.found&&result?.synced&&result.syncedLyrics){
+      if(keep&&S._lrcRaw===result.syncedLyrics)return;
+      DuoTune.ui.setLyrics(result.syncedLyrics);
+      if(source)source.textContent='Synced lyrics';
+    }else{
+      DuoTune.ui.setLyrics('');
+      if(source&&!keep)source.textContent=result?.reason||'No exact synced lyrics found for this recording';
     }
-  }catch(e){
-    console.warn('[DUOTUNE] Lyrics lookup failed',e);
-    if(token===lyricsRequestToken&&source&&!keep)source.textContent='Lyrics unavailable right now';
+  }catch(error){
+    console.warn('[DUOTUNE] Exact lyrics lookup failed:',error);
+    if(token===lyricsRequestToken&&source&&!keep)source.textContent=error.message||'Lyrics unavailable right now';
   }
 }
 
@@ -2273,7 +2222,16 @@ async function duotuneResolveSpotifyTrack(song){
 
 async function duotuneSearchYouTube(query){
   const data=await duotuneYoutubeRequest({action:'search',query,maxResults:12});
-  const results=(data.items||[]).map(x=>({videoId:x.id.videoId,title:x.snippet.title,artist:x.snippet.channelTitle,img:x.snippet.thumbnails?.medium?.url,source:'YouTube'}));
+  const results=(data.items||[]).map(x=>({
+    videoId:x.videoId||x.id?.videoId,
+    title:x.title||x.snippet?.title||'Music track',
+    artist:x.artist||x.snippet?.channelTitle||'',
+    album:x.album||'',
+    dur:Number(x.duration||x.contentDetails?.duration||0),
+    img:x.snippet?.thumbnails?.medium?.url||x.snippet?.thumbnails?.default?.url||'',
+    recording:x.recording||null,
+    source:'YouTube Music'
+  })).filter(x=>x.videoId);
   DuoTune.ui.setSearchResults(results);
   try{ let q=JSON.parse(store.get('duotune_recent_q')||'[]'); q=[query,...q.filter(x=>x!==query)].slice(0,6); store.set('duotune_recent_q',JSON.stringify(q)); }catch(e){}
   const rb=$('#recommendations'); if(rb){ rb.dataset.loaded=''; clearTimeout(window._recT); window._recT=setTimeout(()=>duotuneLoadRecommendations(true),1200); }
@@ -2283,14 +2241,20 @@ async function duotuneSearchYouTube(query){
 const cleanTitle=t=>String(t||'').replace(/[\(\[\{][^\)\]\}]*[\)\]\}]/g,' ').replace(/\b(official|video|audio|lyrics?|lyrical|hd|4k|mv|visuali[sz]er|full song|music)\b/ig,' ').replace(/\s+/g,' ').trim();
 let recRound=0;
 function recSeeds(){
-  let q=[]; try{q=JSON.parse(store.get('duotune_recent_q')||'[]');}catch(e){}
-  const cur=S.queue[S.index]||S.song, out=[];
-  if(q[0])out.push(q[0]);
-  if(cur?.title)out.push(cleanTitle(cur.title));
-  q.slice(1,4).forEach(x=>out.push(x));
-  S.queue.slice(Math.max(0,S.index-2),S.index+4).forEach(x=>{ if(x?.title)out.push(cleanTitle(x.title)); });
-  (window.DUOTUNE_HISTORY||[]).slice(-4).reverse().forEach(x=>{ if(x?.title)out.push(cleanTitle(x.title)); });
-  return [...new Set(out.map(x=>x.trim()).filter(x=>x.length>2))];
+  const out=[];
+  const add=(title,artist='')=>{
+    const t=cleanTitle(title),a=String(artist||'').trim();
+    const q=[t,a].filter(Boolean).join(' ').trim();
+    if(q.length>2&&!out.some(x=>x.toLowerCase()===q.toLowerCase()))out.push(q);
+  };
+  // Shared room history is already sorted newest-first by mergedHistory().
+  mergedHistory().slice(0,8).forEach(x=>add(x.title,x.artist));
+  const current=S.queue[S.index]||S.song;
+  if(current?.title)add(current.title,current.artist);
+  // Recent queue context and mutual favourites provide extra taste signals.
+  S.queue.slice(Math.max(0,S.index-2),S.index+3).forEach(x=>add(x?.title,x?.artist));
+  [...(S.favs?.me||[]),...(S.favs?.her||[])].slice(0,6).forEach(x=>add(x.title,x.artist));
+  return out.slice(0,10);
 }
 async function duotuneLoadRecommendations(force=false){
   const box=$('#recommendations');if(!box||!duotuneSupabase)return;
@@ -2298,7 +2262,7 @@ async function duotuneLoadRecommendations(force=false){
   if(box._busy)return; box._busy=true;
   const seeds=recSeeds(), round=recRound++;
   const pick=seeds.length?[seeds[round%seeds.length],seeds[(round+1+Math.floor(Math.random()*Math.max(1,seeds.length-1)))%seeds.length]]:[];
-  const queries=[...new Set(pick)].map(sd=>['songs like','similar songs to','more like'][round%3]+' '+sd);
+  const queries=[...new Set(pick)].map(sd=>['songs like','similar songs to','more songs by'][round%3]+' '+sd);
   if(!queries.length) queries.push('popular songs trending music');
   box.innerHTML='<div class="empty">Finding songs you might both like…</div>';
   try{
@@ -2306,13 +2270,13 @@ async function duotuneLoadRecommendations(force=false){
     const seen=new Set(S.queue.map(x=>ytVideoId(x)).filter(Boolean)), got=new Set(), items=[];
     lists.forEach(d=>(d.items||[]).forEach(x=>{ const id=x.id?.videoId; if(id&&!seen.has(id)&&!got.has(id)){got.add(id);items.push(x);} }));
     for(let i=items.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[items[i],items[j]]=[items[j],items[i]];}
-    const recs=items.slice(0,8).map(x=>({videoId:x.id.videoId,title:x.snippet?.title||'YouTube song',artist:x.snippet?.channelTitle||'YouTube',img:x.snippet?.thumbnails?.medium?.url||x.snippet?.thumbnails?.default?.url||`https://i.ytimg.com/vi/${x.id.videoId}/hqdefault.jpg`,source:'YouTube'}));
+    const recs=items.slice(0,8).map(x=>({videoId:x.videoId||x.id?.videoId,title:x.title||x.snippet?.title||'Music track',artist:x.artist||x.snippet?.channelTitle||'Unknown artist',album:x.album||'',dur:Number(x.duration||x.contentDetails?.duration||0),recording:x.recording||null,img:x.snippet?.thumbnails?.medium?.url||x.snippet?.thumbnails?.default?.url||`https://i.ytimg.com/vi/${x.id.videoId}/hqdefault.jpg`,source:'YouTube Music'}));
     box.innerHTML=recs.length?recs.map((r,i)=>`<button class="row rec-row" data-rec="${i}"><span class="q-art">${artHTML(r,i)}</span><span class="t"><div class="n">${esc(r.title)}</div><div class="s">${esc(r.artist)}</div></span><span class="plus">${ico('plus')}</span></button>`).join(''):'<div class="empty">No suggestions found. Try Refresh.</div>';
     box._items=recs;box.dataset.loaded='yes';
   }catch(e){box.innerHTML='<div class="empty">Could not load suggestions right now</div>';console.warn('[DUOTUNE] Recommendations failed',e);}
   finally{box._busy=false;}
 }
-$('#recommendations').onclick=e=>{const b=e.target.closest('[data-rec]');if(!b)return;const r=$('#recommendations')._items?.[+b.dataset.rec];if(!r)return;DuoTune.emit('queue:add',{videoId:r.videoId,title:r.title,artist:r.artist,img:r.img});toast('Up next ♡');haptic(10);b.disabled=true;b.style.opacity='.5';};
+$('#recommendations').onclick=e=>{const b=e.target.closest('[data-rec]');if(!b)return;const r=$('#recommendations')._items?.[+b.dataset.rec];if(!r)return;DuoTune.emit('queue:add',{videoId:r.videoId,title:r.title,artist:r.artist,album:r.album,dur:r.dur,recording:r.recording,img:r.img});toast('Up next ♡');haptic(10);b.disabled=true;b.style.opacity='.5';};
 
 /* UI-FIX: favourites. Works live over the room channel; the table below is optional (see duotune-favourites.sql). */
 async function duotuneLoadFavs(){
@@ -2398,10 +2362,14 @@ DuoTune.on('queue:add',async p=>{
   const incomingUrl=String(p?.url||'').trim();
   const videoId=ytVideoId({videoId:p?.videoId,url:incomingUrl,id:p?.videoId||incomingUrl});
   if(!videoId){toast('Could not read a YouTube video ID from that link.');ytStatus('Invalid YouTube link');return;}
-  let song={id:videoId,videoId,url:'https://www.youtube.com/watch?v='+videoId,title:p.title||'YouTube song',artist:p.artist||'YouTube',img:p.img||`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,dur:0};
+  let song={id:videoId,videoId,url:'https://www.youtube.com/watch?v='+videoId,title:p.title||'YouTube song',artist:p.artist||'YouTube',album:p.album||'',img:p.img||`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,dur:Number(p.dur)||0,recording:p.recording||null,source:'youtube-music'};
   let target=S.queue.findIndex(x=>ytVideoId(x)===videoId);
   if(target<0){ const at=S.index<0?S.queue.length:S.index+1; S.queue.splice(at,0,song); target=at; }
-  else if(S.index>=0&&target!==S.index){ const [mv]=S.queue.splice(target,1); if(target<S.index)S.index--; const at=S.index+1; S.queue.splice(at,0,mv); target=at; song=mv; }
+  else {
+    S.queue[target]={...S.queue[target],...Object.fromEntries(Object.entries(song).filter(([key,value])=>value!==''&&value!==null&&value!==undefined&&value!==0))};
+    song=S.queue[target];
+    if(S.index>=0&&target!==S.index){ const [mv]=S.queue.splice(target,1); if(target<S.index)S.index--; const at=S.index+1; S.queue.splice(at,0,mv); target=at; song=mv; }
+  }
   // If this is the first track, select and load it immediately, before any network await.
   const firstTrack=S.index<0;
   if(firstTrack){
@@ -2416,18 +2384,7 @@ DuoTune.on('queue:add',async p=>{
   await duotunePersistQueue();
   store.set('duotune_queue_'+(S.code||'local'),JSON.stringify({queue:S.queue,index:S.index}));
   await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:false});
-  // Fetch display metadata after the player load request, never before it.
-  try{
-    const r=await fetch('https://www.youtube.com/oembed?url='+encodeURIComponent(song.url)+'&format=json');
-    if(r.ok){
-      const d=await r.json();
-      song.title=d.title||song.title;song.artist=d.author_name||song.artist;song.img=d.thumbnail_url||song.img;
-      const ix=S.queue.findIndex(x=>ytVideoId(x)===videoId);
-      if(ix>=0){S.queue[ix]={...S.queue[ix],...song};DuoTune.ui.setQueue(S.queue,S.index);if(ix===S.index)DuoTune.ui.setNowPlaying(S.queue[ix]);}
-      await duotunePersistQueue();
-      await duotuneBroadcast({kind:'queue',queue:S.queue,index:S.index,playing:S.playing});
-    }
-  }catch(e){console.warn('[DUOTUNE] Could not load YouTube metadata',e);}
+  // Keep InnerTube Music metadata canonical; uploader metadata can describe a cover or re-upload.
   toast('Added to shared queue');
 });
 DuoTune.on('queue:play',async p=>{
