@@ -1922,8 +1922,9 @@ function ytInitPlayer(){
   ytInitStarted=true;ytStatus('Loading YouTube player…');
   ytLoadApi().then(()=>{
     const mount=$('#yt-player');if(!mount)throw new Error('Player viewport is missing.');
-    const current=S.queue[S.index]||S.song, videoId=ytVideoId(current);
-    ytPlayer=new window.YT.Player(mount,{width:'200',height:'200',videoId:videoId||undefined,playerVars:{autoplay:0,controls:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin},events:{
+    const current=S.index>=0?(S.queue[S.index]||S.song):null;
+    const videoId=ytVideoId(current);
+    const playerConfig={width:'200',height:'200',playerVars:{autoplay:0,controls:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin},events:{
       onReady:()=>{
         ytReady=true;ytPlayer.setVolume(Math.max(0,Math.min(100,Number($('#vol')?.value)||75)));ytStatus('Ready · select a song to play');
         if(S.index>=0)ytLoadCurrent(false);
@@ -1937,7 +1938,11 @@ function ytInitPlayer(){
       },
       onStateChange:ytHandleStateChange,
       onError:event=>{const messages={2:'Invalid YouTube video ID.',5:'This video cannot be played in the HTML5 player.',100:'This video is unavailable.',101:'The owner does not allow embedded playback.',150:'The owner does not allow embedded playback.'};const message=messages[event.data]||'YouTube could not play this video.';ytStatus(message);toast(message);console.warn('[DUOTUNE] YouTube player error:',event.data);}
-    }});
+    }};
+    // Do not pass an empty/undefined videoId to the IFrame API.
+    // The player is initialized without a video, then the selected queue item is loaded.
+    if(videoId)playerConfig.videoId=videoId;
+    ytPlayer=new window.YT.Player(mount,playerConfig);
   }).catch(error=>{ytInitStarted=false;ytStatus(error.message||'YouTube player unavailable');toast(error.message||'Could not initialize YouTube player');console.error('[DUOTUNE] IFrame API initialization failed:',error);});
 }
 function ytLoadCurrent(autoplay=true){
