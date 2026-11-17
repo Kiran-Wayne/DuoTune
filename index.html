@@ -293,10 +293,16 @@ a.row{color:inherit;text-decoration:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .shake{animation:shake .35s}
 @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-/* Browser-native audio element: no visible player chrome, no layout impact. */
-#duotune-audio-deck{position:fixed;left:0;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;z-index:-1}
-#duotune-audio-deck audio{width:1px;height:1px}
-#yt-status{display:none}
+/* Official YouTube player viewport. Keep it visible and large enough for the embed requirements. */
+.yt-embed-shell{flex:none;display:flex;justify-content:center;align-items:center;padding:4px 0 2px}
+.yt-embed-frame{width:200px;height:200px;min-width:200px;min-height:200px;border-radius:18px;overflow:hidden;background:rgba(16,19,24,.08);box-shadow:0 14px 28px -16px rgba(35,55,105,.45)}
+#yt-player,#yt-player iframe{width:200px!important;height:200px!important;display:block}
+#yt-status{font-size:11px;line-height:1.3;text-align:center;color:var(--mut);padding:3px 0;min-height:18px}
+#v-player{overflow-y:auto;scrollbar-width:none}
+#v-player::-webkit-scrollbar{display:none}
+.art-stage{flex:0 0 auto;min-height:0;padding:8px 0 10px}
+.art{width:clamp(116px,34vw,156px);transform:scale(1)}
+.info{margin-top:8px}
 @media (prefers-reduced-motion:reduce){*:not(.rx){animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
 /* ===== welcome v3: rose, centred photo, name + password ===== */
@@ -375,9 +381,7 @@ button:active{transform:scale(.97)}
 #nameInput[readonly]{opacity:.65}
 
 
-/* ---- invisible YouTube deck ---- */
-#duotune-audio-deck{position:fixed;left:0;top:0;opacity:0;clip-path:inset(50%);z-index:-1;pointer-events:none}
-#yt-status{display:none}
+/* ---- visible official YouTube embed; DuoTune metadata remains in its own UI ---- */
 
 /* ---- anti-flicker: no backdrop-filter inside fading views, promoted layers ---- */
 .view{will-change:opacity,transform;backface-visibility:hidden;-webkit-backface-visibility:hidden}
@@ -745,6 +749,8 @@ body.kb .msgwrap,body.kb .dock{transition:none}
       <!-- NOW PLAYING -->
       <section class="view active" id="v-player">
         <div class="art-stage"><div class="art" id="art"></div></div>
+        <div class="yt-embed-shell" aria-label="Official video playback"><div class="yt-embed-frame" id="yt-player"></div></div>
+        <div id="yt-status" role="status">Player is loading…</div>
         <div class="info">
           <div class="t"><div class="title" id="title">Pick your first song</div><div class="artist" id="artist">Add one in Library</div></div>
           <button class="round heart" id="fav" aria-label="Favourite"><svg class="i"><use href="#i-heart"/></svg></button>
@@ -860,11 +866,7 @@ body.kb .msgwrap,body.kb .dock{transition:none}
   </div>
   <div class="toast" id="toast" role="status"></div>
 
-  <!-- Browser-native audio engine. Kept outside the visible UI. -->
-  <section id="duotune-audio-deck" aria-hidden="true" style="display:none">
-    <span id="yt-status"></span>
-    <audio id="duotune-audio" preload="none"></audio>
-  </section>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1861,180 +1863,91 @@ async function duotuneConnect({name,code,login}){
   }
 }
 
-/* ---------- browser-native audio player (provider stream resolver pending) ---------- */
+/* ---------- Official YouTube IFrame player ---------- */
 let ytPlayer = null, ytReady = false, ytProgressTimer = null, ytRemoteAction = false;
-let ytAudio = null, ytLoadToken = 0, ytDesiredPlaying = false, ytCurrentVideoId = null, ytResolving = false;
-let ytCurrentStartSeconds = 0, ytLastResolvedAt = 0;
-const YT = { PlayerState: { ENDED:0, PLAYING:1, PAUSED:2, BUFFERING:3, CUED:5 } };
+let ytCurrentVideoId = null, ytInitStarted = false, ytApiPromise = null;
 const ytStatus = (message) => { const el=$('#yt-status'); if(el) el.textContent=message; };
 function ytVideoId(song){
   if(!song) return null;
-  const direct=String(song.videoId||'').trim();
+  const direct=String(song.videoId||song.recording?.videoId||'').trim();
   if(/^[A-Za-z0-9_-]{11}$/.test(direct)) return direct;
   const raw=String(song.url||song.id||'').trim();
   if(/^[A-Za-z0-9_-]{11}$/.test(raw)) return raw;
   try{
-    const u=new URL(raw);
-    const host=u.hostname.replace(/^www\./,'').replace(/^m\./,'');
+    const u=new URL(raw),host=u.hostname.replace(/^www\./,'').replace(/^m\./,'');
     let id='';
     if(host==='youtu.be') id=u.pathname.split('/').filter(Boolean)[0]||'';
-    else if(host.endsWith('youtube.com') || host==='youtube-nocookie.com'){
+    else if(host.endsWith('youtube.com')||host==='youtube-nocookie.com'){
       id=u.searchParams.get('v')||'';
-      if(!id){const parts=u.pathname.split('/').filter(Boolean);const marker=parts.findIndex(x=>['embed','shorts','live'].includes(x));if(marker>=0)id=parts[marker+1]||'';}
+      if(!id){const parts=u.pathname.split('/').filter(Boolean),marker=parts.findIndex(x=>['embed','shorts','live'].includes(x));if(marker>=0)id=parts[marker+1]||'';}
     }
     return /^[A-Za-z0-9_-]{11}$/.test(id)?id:null;
   }catch{return null;}
 }
-async function duotuneResolveAudio(videoId){
-  const data=await duotuneYoutubeRequest({action:'playback',videoId});
-  if(data?.diagnostic){
-    const status=String(data.playability||'unknown');
-    throw new Error(`The current YouTube stream resolver is blocked (${status}). Music search works, but browser playback needs a compatible, authorized stream provider.`);
-  }
-  if(!data?.url || !/^https:\/\//i.test(data.url)) throw new Error('No browser-compatible audio stream was returned.');
-  return data;
-}
-function ytState(){
-  if(!ytAudio || !ytAudio.src) return ytCurrentVideoId?YT.PlayerState.CUED:YT.PlayerState.PAUSED;
-  if(ytAudio.ended) return YT.PlayerState.ENDED;
-  if(ytAudio.paused) return ytAudio.readyState<2?YT.PlayerState.BUFFERING:YT.PlayerState.PAUSED;
-  if(ytAudio.readyState<3) return YT.PlayerState.BUFFERING;
-  return YT.PlayerState.PLAYING;
-}
-function ytSetPositionState(){
-  try{
-    if(navigator.mediaSession?.setPositionState && Number.isFinite(ytAudio?.duration) && ytAudio.duration>0){
-      navigator.mediaSession.setPositionState({duration:ytAudio.duration,playbackRate:ytAudio.playbackRate||1,position:Math.min(ytAudio.duration,ytAudio.currentTime||0)});
-    }
-  }catch{}
-}
-function ytHandlePlay(){
-  S.playing=true; DuoTune.ui.setPlaying(true); ytStatus('Playing');
-  duotuneSetMediaSession(S.queue[S.index]||S.song); ytSetPositionState();
-  if(!ytRemoteAction && S.isHost) duotuneBroadcast({kind:'player',action:'play',seconds:ytAudio.currentTime||0});
-  if(S.queue[S.index]) duotuneSaveHistory(S.queue[S.index]);
-}
-function ytHandlePause(){
-  if(!ytAudio || ytAudio.ended) return;
-  S.playing=false; DuoTune.ui.setPlaying(false); ytStatus('Paused');
-  if(!ytRemoteAction && S.isHost) duotuneBroadcast({kind:'player',action:'pause',seconds:ytAudio.currentTime||0});
+function ytLoadApi(){
+  if(window.YT?.Player)return Promise.resolve(window.YT);
+  if(ytApiPromise)return ytApiPromise;
+  ytApiPromise=new Promise((resolve,reject)=>{
+    const previous=window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady=()=>{try{if(typeof previous==='function')previous();}catch{}resolve(window.YT);};
+    let tag=document.getElementById('youtube-iframe-api');
+    if(!tag){tag=document.createElement('script');tag.id='youtube-iframe-api';tag.src='https://www.youtube.com/iframe_api';tag.async=true;tag.onerror=()=>reject(new Error('Could not load the YouTube player API.'));document.head.appendChild(tag);}
+    setTimeout(()=>{if(!window.YT?.Player)reject(new Error('YouTube player API did not become ready.'));},20000);
+  }).catch(error=>{ytApiPromise=null;throw error;});
+  return ytApiPromise;
 }
 function ytSetMediaSession(song){
-  if(!('mediaSession' in navigator) || !song)return;
+  if(!('mediaSession' in navigator)||!song)return;
   try{
-    if('MediaMetadata' in window) navigator.mediaSession.metadata=new MediaMetadata({
-      title:String(song.title||'♡'),artist:String(song.artist||''),album:'',
-      artwork:song.img?[{src:song.img,sizes:'512x512',type:'image/jpeg'}]:[]
-    });
-    const actions={
-      play:()=>{if(ytReady&&ytPlayer)ytPlayer.playVideo();},
-      pause:()=>{if(ytReady&&ytPlayer)ytPlayer.pauseVideo();},
-      previoustrack:()=>DuoTune.emit('player:prev',{}),
-      nexttrack:()=>DuoTune.emit('player:next',{}),
-      seekbackward:d=>{if(ytReady&&ytPlayer)ytPlayer.seekTo(Math.max(0,(ytPlayer.getCurrentTime()||0)-(d.seekOffset||10)),true);},
-      seekforward:d=>{if(ytReady&&ytPlayer)ytPlayer.seekTo((ytPlayer.getCurrentTime()||0)+(d.seekOffset||10),true);}
-    };
+    if('MediaMetadata' in window)navigator.mediaSession.metadata=new MediaMetadata({title:String(song.title||'♡'),artist:String(song.artist||''),album:String(song.album||''),artwork:song.img?[{src:song.img,sizes:'512x512',type:'image/jpeg'}]:[]});
+    const actions={play:()=>ytPlayer?.playVideo(),pause:()=>ytPlayer?.pauseVideo(),previoustrack:()=>DuoTune.emit('player:prev',{}),nexttrack:()=>DuoTune.emit('player:next',{}),seekbackward:d=>ytPlayer?.seekTo(Math.max(0,ytPlayer.getCurrentTime()-(d.seekOffset||10)),true),seekforward:d=>ytPlayer?.seekTo(ytPlayer.getCurrentTime()+(d.seekOffset||10),true)};
     for(const [name,handler] of Object.entries(actions)){try{navigator.mediaSession.setActionHandler(name,handler);}catch{}}
   }catch(e){console.debug('[DUOTUNE] Media Session unavailable:',e);}
 }
+function ytHandleStateChange(event){
+  const state=event.data, states=window.YT.PlayerState;
+  if(state===states.PLAYING){
+    S.playing=true;DuoTune.ui.setPlaying(true);ytStatus('Playing');ytSetMediaSession(S.queue[S.index]||S.song);
+    if(!ytRemoteAction&&S.isHost)duotuneBroadcast({kind:'player',action:'play',seconds:ytPlayer.getCurrentTime()||0});
+    if(S.queue[S.index])duotuneSaveHistory(S.queue[S.index]);
+  }else if(state===states.PAUSED){
+    S.playing=false;DuoTune.ui.setPlaying(false);ytStatus('Paused');
+    if(!ytRemoteAction&&S.isHost)duotuneBroadcast({kind:'player',action:'pause',seconds:ytPlayer.getCurrentTime()||0});
+  }else if(state===states.BUFFERING){ytStatus('Buffering…');}
+  else if(state===states.CUED){ytStatus('Ready to play');}
+  else if(state===states.ENDED){S.playing=false;DuoTune.ui.setPlaying(false);ytStatus('Track ended');if(!ytRemoteAction)DuoTune.emit('player:next',{});}
+}
 function ytInitPlayer(){
-  if(!S.code || ytInitStarted) return;
-  const deck=$('#duotune-audio-deck');
-  if(deck) deck.style.display='block';
-  ytAudio=$('#duotune-audio');
-  if(!ytAudio) { ytStatus('Audio element is unavailable'); return; }
-  ytInitStarted=true;
-  ytAudio.preload='auto';
-  ytAudio.volume=Math.max(0,Math.min(1,(Number($('#vol')?.value)||75)/100));
-  ytPlayer={
-    loadVideoById:({videoId,startSeconds=0}={})=>ytLoadAudio(videoId,startSeconds,true).catch(error=>{console.warn('[DUOTUNE] Audio stream resolution failed',error);toast(error.message||'Could not load this track');}),
-    playVideo:()=>{ytDesiredPlaying=true;if(!ytAudio.src){if(ytCurrentVideoId&&!ytResolving)ytLoadAudio(ytCurrentVideoId,ytAudio.currentTime||ytCurrentStartSeconds,true).catch(error=>{console.warn(error);toast(error.message||'Could not start playback');});return;}const p=ytAudio.play();if(p?.catch)p.catch(ytAutoplayFailure);},
-    pauseVideo:()=>{ytDesiredPlaying=false;ytAudio.pause();},
-    seekTo:(seconds)=>{const target=Math.max(0,Number(seconds)||0);if(Number.isFinite(ytAudio.duration)&&ytAudio.duration>0)ytAudio.currentTime=Math.min(target,ytAudio.duration);else ytCurrentStartSeconds=target;},
-    getCurrentTime:()=>Number(ytAudio.currentTime)||0,
-    getDuration:()=>Number(ytAudio.duration)||Number(S.dur)||0,
-    getPlayerState:()=>ytState(),
-    setVolume:(value)=>{ytAudio.volume=Math.max(0,Math.min(1,(Number(value)||0)/100));},
-    stopVideo:()=>{ytDesiredPlaying=false;ytAudio.pause();try{ytAudio.removeAttribute('src');ytAudio.load();}catch{}ytCurrentVideoId=null;S.pos=0;},
-  };
-  ytAudio.addEventListener('loadedmetadata',()=>{
-    if(Number.isFinite(ytAudio.duration)&&ytAudio.duration>0){S.dur=ytAudio.duration;DuoTune.ui.setProgress(ytAudio.currentTime||0,S.dur);if(S.song&&!Number(S.song.dur)){S.song.dur=ytAudio.duration;duotuneFetchLyrics(S.song,false);}}
-    const start=Math.max(0,ytCurrentStartSeconds||0);if(start>0){try{ytAudio.currentTime=Math.min(start,ytAudio.duration||start);}catch{}}
-    if(ytDesiredPlaying){const p=ytAudio.play();if(p?.catch)p.catch(ytAutoplayFailure);}
-  });
-  ytAudio.addEventListener('play',ytHandlePlay);
-  ytAudio.addEventListener('playing',()=>{ytStatus('Playing');S.playing=true;DuoTune.ui.setPlaying(true);});
-  ytAudio.addEventListener('pause',ytHandlePause);
-  ytAudio.addEventListener('waiting',()=>ytStatus('Buffering…'));
-  ytAudio.addEventListener('stalled',()=>ytStatus('Connection stalled · waiting…'));
-  ytAudio.addEventListener('ended',()=>{S.playing=false;DuoTune.ui.setPlaying(false);ytStatus('Track ended');if(!ytRemoteAction)DuoTune.emit('player:next',{});});
-  ytAudio.addEventListener('timeupdate',()=>{
-    const duration=Number(ytAudio.duration)||0,position=Number(ytAudio.currentTime)||0;
-    if(duration>0){S.dur=duration;S.pos=position;DuoTune.ui.setProgress(position,duration);ytSetPositionState();}
-  });
-  ytAudio.addEventListener('durationchange',()=>{
-    const duration=Number(ytAudio.duration)||0;if(duration>0){S.dur=duration;DuoTune.ui.setProgress(ytAudio.currentTime||0,duration);}
-  });
-  ytAudio.addEventListener('error',()=>{
-    const code=ytAudio.error?.code;
-    const message=code===2?'Network error while loading audio':code===3?'Audio decoding failed':code===4?'This audio format is not supported':'Audio playback failed';
-    ytStatus(message);console.warn('[DUOTUNE] Browser audio error:',code,message);
-    if(ytCurrentVideoId && Date.now()-ytLastResolvedAt>5000){ytStatus('Refreshing audio source…');ytLoadAudio(ytCurrentVideoId,ytAudio.currentTime||0,ytDesiredPlaying,true).catch(()=>{});}
-    else toast(message+'. Try another track.');
-  });
-  ytReady=true;
-  try{ytPlayer.setVolume(+$('#vol').value);}catch{}
-  ytStatus('Audio engine ready · add a track');
-  duotuneStartSyncHeartbeat();
-  console.info('[DUOTUNE] Browser-native audio engine ready');
-  if(S.index>=0) ytLoadCurrent(false);
-  clearInterval(ytProgressTimer);
-  ytProgressTimer=setInterval(()=>{
-    if(!ytReady||!ytAudio)return;
-    const duration=Number(ytAudio.duration)||0,position=Number(ytAudio.currentTime)||0;
-    if(duration>0){S.dur=duration;S.pos=position;DuoTune.ui.setProgress(position,duration);}
-  },1000);
-}
-let ytInitStarted=false;
-function ytAutoplayFailure(error){
-  if(error?.name==='NotAllowedError'){
-    ytStatus('Ready · press Play to start');
-    DuoTune.ui.setPlaying(false);S.playing=false;
-  }else{
-    console.warn('[DUOTUNE] Audio play request failed:',error);
-    ytStatus('Could not start playback · press Play to retry');
-  }
-}
-async function ytLoadAudio(videoId,startSeconds=0,autoplay=true,forceRefresh=false){
-  if(!/^[A-Za-z0-9_-]{11}$/.test(String(videoId||'')))throw new Error('Invalid YouTube video ID.');
-  if(!ytReady||!ytAudio)throw new Error('Audio engine is still initializing.');
-  const token=++ytLoadToken;
-  ytCurrentVideoId=videoId;ytCurrentStartSeconds=Math.max(0,Number(startSeconds)||0);ytDesiredPlaying=!!autoplay;ytResolving=true;
-  ytStatus('Resolving audio stream…');
-  if(!forceRefresh){ytAudio.pause();}
-  try{
-    const stream=await duotuneResolveAudio(videoId);
-    if(token!==ytLoadToken)return;
-    ytResolving=false;ytLastResolvedAt=Date.now();
-    ytAudio.src=stream.url;
-    ytAudio.load();
-    if(stream.duration>0){S.dur=stream.duration;}
-    ytStatus('Loading audio…');
-    // The loadedmetadata handler applies the requested seek offset before play.
-    // Browsers may still require a fresh user gesture after stream resolution.
-  }catch(error){
-    if(token===ytLoadToken){ytResolving=false;ytDesiredPlaying=false;S.playing=false;DuoTune.ui.setPlaying(false);ytStatus(error.message||'Could not resolve audio');}
-    throw error;
-  }
+  if(!S.code||ytInitStarted)return;
+  ytInitStarted=true;ytStatus('Loading YouTube player…');
+  ytLoadApi().then(()=>{
+    const mount=$('#yt-player');if(!mount)throw new Error('Player viewport is missing.');
+    const current=S.queue[S.index]||S.song, videoId=ytVideoId(current);
+    ytPlayer=new window.YT.Player(mount,{width:'200',height:'200',videoId:videoId||undefined,playerVars:{autoplay:0,controls:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin},events:{
+      onReady:()=>{
+        ytReady=true;ytPlayer.setVolume(Math.max(0,Math.min(100,Number($('#vol')?.value)||75)));ytStatus('Ready · select a song to play');
+        if(S.index>=0)ytLoadCurrent(false);
+        duotuneStartSyncHeartbeat();
+        clearInterval(ytProgressTimer);
+        ytProgressTimer=setInterval(()=>{
+          if(!ytReady||!ytPlayer)return;
+          const duration=Number(ytPlayer.getDuration())||Number(S.dur)||0,position=Number(ytPlayer.getCurrentTime())||0;
+          if(duration>0){S.pos=position;DuoTune.ui.setProgress(position,duration);}
+        },500);
+      },
+      onStateChange:ytHandleStateChange,
+      onError:event=>{const messages={2:'Invalid YouTube video ID.',5:'This video cannot be played in the HTML5 player.',100:'This video is unavailable.',101:'The owner does not allow embedded playback.',150:'The owner does not allow embedded playback.'};const message=messages[event.data]||'YouTube could not play this video.';ytStatus(message);toast(message);console.warn('[DUOTUNE] YouTube player error:',event.data);}
+    }});
+  }).catch(error=>{ytInitStarted=false;ytStatus(error.message||'YouTube player unavailable');toast(error.message||'Could not initialize YouTube player');console.error('[DUOTUNE] IFrame API initialization failed:',error);});
 }
 function ytLoadCurrent(autoplay=true){
   const song=S.queue[S.index],id=ytVideoId(song);
   if(!song||!id){ytStatus('No valid YouTube video ID in queue item');console.warn('[DUOTUNE] Queue item has no YouTube video ID:',song);return;}
-  if(!ytReady){ytStatus('Preparing audio engine…');return;}
-  ytStatus('Loading track…');
-  ytLoadAudio(id,0,autoplay).then(()=>{
-    if(S.queue[S.index]&&S.queue[S.index].dur<=0&&S.dur>0)S.queue[S.index].dur=S.dur;
-  }).catch(error=>{console.warn('[DUOTUNE] Audio load failed',error);toast(error.message||'Could not load this track');});
+  if(!ytReady||!ytPlayer){ytStatus('Preparing YouTube player…');return;}
+  ytCurrentVideoId=id;ytStatus(autoplay?'Loading selected song…':'Song ready');
+  const seconds=Math.max(0,Number(S.pos)||0);
+  if(autoplay)ytPlayer.loadVideoById({videoId:id,startSeconds:seconds});
+  else ytPlayer.cueVideoById({videoId:id,startSeconds:seconds});
 }
 let syncHeartbeat=null;
 function duotuneStartSyncHeartbeat(){
@@ -2098,7 +2011,7 @@ async function duotuneRestoreQueue(){
   if(data&&Array.isArray(data.queue)&&S.queue.length===0){
     S.queue=data.queue;S.index=Number.isInteger(data.index_value)?data.index_value:-1;
     DuoTune.ui.setQueue(S.queue,S.index);
-    if(S.index>=0)DuoTune.ui.setNowPlaying(S.queue[S.index]);
+    if(S.index>=0){DuoTune.ui.setNowPlaying(S.queue[S.index]);if(ytReady&&ytPlayer)ytLoadCurrent(false);}
   }
 }
 
@@ -2320,7 +2233,6 @@ DuoTune.on('room:leave',async()=>{
   duotuneChannel=null;clearInterval(syncHeartbeat);
   if(ytReady && ytPlayer){try{ytPlayer.stopVideo();}catch{}}
   S.code='';
-  const deck=$('#duotune-audio-deck'); if(deck) deck.style.display='none';
   leaveRoom();
 });
 DuoTune.on('player:play',p=>{
@@ -2487,4 +2399,3 @@ try{store.set(SESSION_KEY,'');}catch(e){}
 </script>
 </body>
 </html>
-
