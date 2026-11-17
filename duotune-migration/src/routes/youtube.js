@@ -13,6 +13,7 @@ const router = Router();
 
 const searchCache = new Map();
 const playlistCache = new Map();
+const lyricsCache = new Map();
 
 const CACHE_TTL = 3 * 60 * 1000;
 const MAX_PLAYLIST_ITEMS = 500;
@@ -48,26 +49,107 @@ function cacheSet(cache, key, value) {
   }
 }
 
+function normalizeTrackText(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
 function musicSearchItems(result) {
-  const songs = result?.songs?.contents || [];
-  const videos = result?.videos?.contents || [];
-
-  const combined = [...songs, ...videos];
-
-  if (combined.length) return combined;
-
-  // Defensive fallback for parser layout changes.
-  const sections = result?.contents || [];
-
-  return sections.flatMap(
-    (section) => section?.contents || []
-  );
+  // Keep discovery music-first: never mix generic YouTube video results into
+  // the song search response. The UI expects song entities from YouTube Music.
+  return Array.isArray(result?.songs?.contents)
+    ? result.songs.contents
+    : [];
 }
 
 router.post('/', requireSupabaseUser, async (req, res) => {
   const action = cleanString(req.body?.action, 20);
 
   try {
+
+    // ==========================================
+    // STRICT SYNCED LYRICS LOOKUP
+    // ==========================================
+
+    if (action === 'lyrics') {
+      const title = cleanString(req.body?.title, 180);
+      const artist = cleanString(req.body?.artist, 180);
+      const album = cleanString(req.body?.album, 180);
+      const duration = Math.round(Number(req.body?.duration) || 0);
+
+      if (!title || !artist || duration < 1 || duration > 3600) {
+        return res.status(400).json({
+          error: 'Exact title, artist and track duration are required for synced lyrics.',
+        });
+      }
+
+      const cacheKey = [title, artist, album, duration].map(normalizeTrackText).join('|');
+      const cached = cacheGet(lyricsCache, cacheKey);
+      if (cached) return res.json(cached);
+
+      const params = new URLSearchParams({
+        track_name: title,
+        artist_name: artist,
+        duration: String(duration),
+      });
+      if (album) params.set('album_name', album);
+
+      const response = await fetch(`https://lrclib.net/api/get?${params}`, {
+        headers: {
+          'User-Agent': 'DuoTune/1.1 (https://github.com/Kiran-Wayne/DuoTune)',
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (response.status === 404) {
+        const miss = { found: false, synced: false, reason: 'No exact synced-lyrics match was found.' };
+        cacheSet(lyricsCache, cacheKey, miss);
+        return res.json(miss);
+      }
+      if (response.status === 429) {
+        return res.status(429).json({ error: 'Lyrics service is rate-limiting requests. Please wait a moment.' });
+      }
+      if (!response.ok) throw new Error(`LRCLIB returned HTTP ${response.status}`);
+
+      const record = await response.json();
+      const exactTitle = normalizeTrackText(record.trackName || record.name) === normalizeTrackText(title);
+      const exactArtist = normalizeTrackText(record.artistName) === normalizeTrackText(artist);
+      const exactAlbum = !album || normalizeTrackText(record.albumName) === normalizeTrackText(album);
+      const durationDifference = Math.abs(Number(record.duration) - duration);
+      const syncedLyrics = typeof record.syncedLyrics === 'string' ? record.syncedLyrics.trim() : '';
+      const exactMatch = exactTitle && exactArtist && exactAlbum && durationDifference <= 2;
+
+      // Never substitute a cover, alternate release, plain lyrics, or a loose title match.
+      const result = exactMatch && syncedLyrics
+        ? {
+            found: true,
+            synced: true,
+            hasWordSync: Boolean(record.hasWordSync),
+            syncedLyrics,
+            match: {
+              id: record.id,
+              title: record.trackName || record.name,
+              artist: record.artistName,
+              album: record.albumName || '',
+              duration: Number(record.duration),
+              durationDifference,
+            },
+          }
+        : {
+            found: false,
+            synced: false,
+            reason: !exactMatch
+              ? 'Lyrics metadata did not match this exact recording.'
+              : 'This recording has no timestamped lyrics.',
+          };
+
+      cacheSet(lyricsCache, cacheKey, result);
+      return res.json(result);
+    }
 
     // ==========================================
     // TEMPORARY PLAYBACK DIAGNOSTIC
@@ -151,29 +233,16 @@ router.post('/', requireSupabaseUser, async (req, res) => {
 
       if (cached) return res.json(cached);
 
-      // Prioritize YouTube Music song entities.
-      let result = await music.search(query, {
-        type: 'song',
-      });
-
-      let items = musicSearchItems(result)
+      // Spotify-style music discovery: ask the YouTube Music song catalog
+      // only. An empty song result stays empty instead of falling back to videos.
+      const result = await music.search(query, { type: 'song' });
+      const items = musicSearchItems(result)
         .map(toLegacySearchItem)
         .filter(Boolean);
 
-      // General video search fallback.
-      if (!items.length) {
-        const videoSearch = await innertube.search(query, {
-          type: 'video',
-        });
-
-        items = (videoSearch?.videos || [])
-          .map(toLegacySearchItem)
-          .filter(Boolean);
-      }
-
       const response = {
         items: items.slice(0, maxResults),
-        source: 'innertube',
+        source: 'youtube-music',
       };
 
       cacheSet(searchCache, cacheKey, response);
@@ -260,7 +329,7 @@ router.post('/', requireSupabaseUser, async (req, res) => {
     // ==========================================
 
     return res.status(400).json({
-      error: "Unknown action. Use 'search', 'playlist' or 'playback'.",
+      error: "Unknown action. Use 'search', 'playlist', 'lyrics' or 'playback'.",
     });
 
   } catch (error) {
@@ -283,9 +352,12 @@ router.post('/', requireSupabaseUser, async (req, res) => {
           ? 'YouTube Music took too long to respond. Try again shortly.'
           : action === 'playback'
             ? 'Playback diagnostic failed. Check Render logs.'
-            : 'YouTube Music search is temporarily unavailable. Please try again.',
+            : action === 'lyrics'
+              ? 'The lyrics service is temporarily unavailable. Please try again.'
+              : 'YouTube Music is temporarily unavailable. Please try again.',
     });
   }
 });
 
 export default router;
+
