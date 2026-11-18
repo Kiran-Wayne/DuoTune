@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import SanscriptModule from '@indic-transliteration/sanscript';
 import { requireSupabaseUser } from '../middleware/auth.js';
 import {
   getInnerTube,
@@ -9,6 +10,7 @@ import {
 } from '../innertube.js';
 
 const router = Router();
+const Sanscript = SanscriptModule?.default || SanscriptModule;
 
 const searchCache = new Map();
 const playlistCache = new Map();
@@ -59,6 +61,120 @@ function musicSearchItems(result) {
   return Array.isArray(result?.songs?.contents)
     ? result.songs.contents
     : [];
+}
+
+const INDIC_SCRIPT_RANGES = [
+  ['devanagari', /[\u0900-\u097F]/u],
+  ['bengali', /[\u0980-\u09FF]/u],
+  ['gujarati', /[\u0A80-\u0AFF]/u],
+  ['gurmukhi', /[\u0A00-\u0A7F]/u],
+  ['oriya', /[\u0B00-\u0B7F]/u],
+  ['tamil', /[\u0B80-\u0BFF]/u],
+  ['telugu', /[\u0C00-\u0C7F]/u],
+  ['kannada', /[\u0C80-\u0CFF]/u],
+  ['malayalam', /[\u0D00-\u0D7F]/u],
+];
+
+function detectIndicScript(value) {
+  const text = String(value || '');
+  return INDIC_SCRIPT_RANGES.find(([, pattern]) => pattern.test(text))?.[0] || null;
+}
+
+function transliterateLrc(raw) {
+  const script = detectIndicScript(raw);
+  if (!script || !Sanscript?.t) {
+    return { text: raw, script, transliterated: false };
+  }
+
+  const text = String(raw).split(/\r?\n/).map((line) => {
+    // Keep every LRC timestamp byte-for-byte; only transliterate the lyric text.
+    const match = line.match(/^((?:\[[^\]]+\])+)(.*)$/u);
+    if (!match) return line ? Sanscript.t(line, script, 'itrans') : line;
+
+    const [, timestamps, lyric] = match;
+    return timestamps + (lyric ? Sanscript.t(lyric, script, 'itrans') : lyric);
+  }).join('\n');
+
+  return { text, script, transliterated: true };
+}
+
+function albumSearchItems(result) {
+  const shelf = result?.albums?.contents;
+  return Array.isArray(shelf) ? shelf : [];
+}
+
+function toAlbumSearchItem(item) {
+  const browseId = String(item?.id || item?.endpoint?.payload?.browseId || '').trim();
+  if (!browseId.startsWith('MPRE')) return null;
+
+  const title = textValue(item?.title) || 'Soundtrack album';
+
+  const artists = Array.isArray(item?.artists)
+    ? item.artists.map((artist) => textValue(artist?.name || artist)).filter(Boolean)
+    : [];
+
+  const artist = artists.join(', ') ||
+    textValue(item?.author?.name || item?.author) || '';
+
+  const thumbnails = Array.isArray(item?.thumbnail) ? item.thumbnail : [];
+
+  const image = [...thumbnails]
+    .sort((a, b) => (Number(b.width) || 0) - (Number(a.width) || 0))[0]?.url || '';
+
+  return {
+    browseId,
+    title,
+    artist,
+    year: textValue(item?.year),
+    type: textValue(item?.item_type),
+    img: image,
+  };
+}
+
+function albumTrackToLegacy(track, albumTitle, albumArtist) {
+  const videoId = String(track?.id || track?.video_id || track?.videoId || '').trim();
+
+  if (!/^[A-Za-z0-9_-]{11}$/.test(videoId)) return null;
+
+  const artists = Array.isArray(track?.artists)
+    ? track.artists.map((artist) => textValue(artist?.name || artist)).filter(Boolean)
+    : [];
+
+  const artist = artists.join(', ') || albumArtist || 'YouTube Music';
+  const title = textValue(track?.title || track?.name) || 'Untitled track';
+
+  const thumbnails = Array.isArray(track?.thumbnails) ? track.thumbnails : [];
+
+  const img = [...thumbnails]
+    .sort((a, b) => (Number(b.width) || 0) - (Number(a.width) || 0))[0]?.url || '';
+
+  const duration = Number(track?.duration?.seconds || track?.duration_seconds || 0) || 0;
+
+  return {
+    id: { videoId },
+    videoId,
+    title,
+    artist,
+    album: albumTitle,
+    duration,
+    recording: {
+      provider: 'youtube-music',
+      videoId,
+      title,
+      artist,
+      album: albumTitle,
+      duration,
+    },
+    snippet: {
+      title,
+      channelTitle: artist,
+      thumbnails: {
+        medium: { url: img },
+        default: { url: img },
+      },
+    },
+    contentDetails: { videoId, duration },
+  };
 }
 
 router.post('/', requireSupabaseUser, async (req, res) => {
@@ -305,6 +421,12 @@ router.post('/', requireSupabaseUser, async (req, res) => {
           ? record.plainLyrics.trim()
           : '';
 
+      const romanized = syncedLyrics
+        ? transliterateLrc(syncedLyrics)
+        : plainLyrics
+          ? transliterateLrc(plainLyrics)
+          : { text: '', script: null, transliterated: false };
+
       const result =
         record && (syncedLyrics || plainLyrics)
           ? {
@@ -413,21 +535,87 @@ router.post('/', requireSupabaseUser, async (req, res) => {
       const cached = cacheGet(searchCache, cacheKey);
       if (cached) return res.json(cached);
 
-      const result = await music.search(
-        query,
-        { type: 'song' }
-      );
+      const [songResult, albumResult] = await Promise.all([
+        music.search(query, { type: 'song' }),
+        music.search(query, { type: 'album' }).catch((error) => {
+          console.warn('[youtube music] album search unavailable:', error.message);
+          return null;
+        }),
+      ]);
 
-      const items = musicSearchItems(result)
+      const items = musicSearchItems(songResult)
         .map(toLegacySearchItem)
         .filter(Boolean);
 
+      const albums = albumSearchItems(albumResult)
+        .map(toAlbumSearchItem)
+        .filter(Boolean)
+        .slice(0, 8);
+
       const response = {
         items: items.slice(0, maxResults),
+        albums,
         source: 'youtube-music',
       };
 
       cacheSet(searchCache, cacheKey, response);
+      return res.json(response);
+    }
+
+    // ==========================================
+    // ALBUM / MOVIE SOUNDTRACK DETAILS
+    // ==========================================
+
+    if (action === 'album') {
+      const browseId = cleanString(req.body?.browseId, 120);
+
+      if (!/^MPRE[A-Za-z0-9_-]{5,}$/.test(browseId)) {
+        return res.status(400).json({
+          error: 'A valid YouTube Music album ID is required.',
+        });
+      }
+
+      const cached = cacheGet(playlistCache, `album:${browseId}`);
+      if (cached) return res.json(cached);
+
+      const album = await music.getAlbum(browseId);
+
+      const albumTitle = textValue(album?.title) || 'Soundtrack album';
+
+      const albumArtists = Array.isArray(album?.artists)
+        ? album.artists.map((artist) => textValue(artist?.name || artist)).filter(Boolean)
+        : [];
+
+      const albumArtist = albumArtists.join(', ') || 'Unknown artist';
+
+      const thumbnails = Array.isArray(album?.thumbnails)
+        ? album.thumbnails
+        : [];
+
+      const image = [...thumbnails]
+        .sort((a, b) => (Number(b.width) || 0) - (Number(a.width) || 0))[0]?.url || '';
+
+      const tracks = (Array.isArray(album?.tracks) ? album.tracks : [])
+        .map((track) => albumTrackToLegacy(track, albumTitle, albumArtist))
+        .filter(Boolean)
+        .slice(0, MAX_PLAYLIST_ITEMS);
+
+      const response = {
+        album: {
+          browseId,
+          title: albumTitle,
+          artist: albumArtist,
+          year: textValue(album?.year),
+          type: textValue(album?.type),
+          img: image,
+          trackCount: Number(album?.trackCount) || tracks.length,
+          duration: textValue(album?.duration),
+        },
+        items: tracks,
+        source: 'youtube-music',
+      };
+
+      cacheSet(playlistCache, `album:${browseId}`, response);
       return res.json(response);
     }
 
@@ -505,7 +693,7 @@ router.post('/', requireSupabaseUser, async (req, res) => {
     // ==========================================
 
     return res.status(400).json({
-      error: "Unknown action. Use 'search', 'playlist', 'lyrics' or 'playback'.",
+      error: "Unknown action. Use 'search', 'album', 'playlist', 'lyrics' or 'playback'.",
     });
 
   } catch (error) {
