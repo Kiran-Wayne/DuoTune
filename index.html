@@ -1506,7 +1506,7 @@ $('#addForm').onsubmit = e => {
 DuoTune.ui.setSearchResults = (list, albums=[]) => {
   const tracks = Array.isArray(list) ? list : [];
   const albumCards = (Array.isArray(albums) ? albums : []).map((a,i)=>`
-    <div class="album-result"><img src="${esc(a.img||'')}" alt="" loading="lazy"><div class="t"><div class="n">${esc(a.title)}</div><div class="s">${esc([a.artist,a.year,a.type].filter(Boolean).join(' · '))}</div></div><button type="button" class="album-open" data-album="${i}">View OST</button></div>`).join('');
+    <div class="album-result">${a.img?`<img src="${esc(a.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:'<span class="q-art"></span>'}<div class="t"><div class="n">${esc(a.title)}</div><div class="s">${esc([a.artist,a.year,a.type].filter(Boolean).join(' · '))}</div></div><button type="button" class="album-open" data-album="${i}">View OST</button></div>`).join('');
   const trackRows = tracks.map((r,i)=>`
     <button class="row" data-i="${i}"><span class="q-art">${artHTML(r,i+1)}</span>
     <span class="t"><div class="n">${esc(r.title)}</div><div class="s">${esc([r.artist,r.album].filter(Boolean).join(' · '))}${r.dur?` · ${fmt(r.dur)}`:''}</div></span>
@@ -2213,7 +2213,8 @@ async function duotuneSearchYouTube(query){
     recording:x.recording||null,
     source:'YouTube Music'
   })).filter(x=>x.videoId);
-  DuoTune.ui.setSearchResults(results,data.albums||[]);
+  const soundtrackAlbums = Array.isArray(data.albums) ? data.albums.filter(a=>a && a.browseId && a.title) : [];
+  DuoTune.ui.setSearchResults(results,soundtrackAlbums);
   try{ let q=JSON.parse(store.get('duotune_recent_q')||'[]'); q=[query,...q.filter(x=>x!==query)].slice(0,6); store.set('duotune_recent_q',JSON.stringify(q)); }catch(e){}
   const rb=$('#recommendations'); if(rb){ rb.dataset.loaded=''; clearTimeout(window._recT); window._recT=setTimeout(()=>duotuneLoadRecommendations(true),1200); }
   await duotuneSaveSearchHistory(query);
