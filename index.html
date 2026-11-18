@@ -1923,7 +1923,7 @@ function ytInitPlayer(){
   ytLoadApi().then(()=>{
     const mount=$('#yt-player');if(!mount)throw new Error('Player viewport is missing.');
     const current=S.queue[S.index]||S.song, videoId=ytVideoId(current);
-    ytPlayer=new window.YT.Player(mount,{width:'200',height:'200',videoId:videoId||undefined,playerVars:{autoplay:0,controls:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin},events:{
+    ytPlayer=new window.YT.Player(mount,{width:'200',height:'200',playerVars:{autoplay:0,controls:1,playsinline:1,rel:0,enablejsapi:1,origin:location.origin},events:{
       onReady:()=>{
         ytReady=true;ytPlayer.setVolume(Math.max(0,Math.min(100,Number($('#vol')?.value)||75)));ytStatus('Ready · select a song to play');
         if(S.index>=0)ytLoadCurrent(false);
