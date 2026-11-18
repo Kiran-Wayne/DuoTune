@@ -36,7 +36,7 @@ function cacheGet(cache, key) {
 }
 
 function cacheSet(cache, key, value) {
-  cache.set(cache, {
+  cache.set(key, {
     value,
     expiresAt: Date.now() + CACHE_TTL,
   });
