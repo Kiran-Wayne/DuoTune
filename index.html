@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23fbe4ea'/%3E%3Ccircle cx='12.5' cy='16' r='8' fill='%23e48aa6'/%3E%3Ccircle cx='19.5' cy='16' r='8' fill='%231f1519' fill-opacity='.9'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Inter:wght@200;300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+Telugu:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Inter:wght@200;300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;700;800&family=Noto+Sans+Telugu:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ============ TOKENS ============ */
 :root{
@@ -863,69 +863,80 @@ body.in-room.lyr .tab.active{background:linear-gradient(145deg,rgba(255,255,255,
 .reacts button.hit{animation:hitpop .55s var(--spring)}
 @keyframes hitpop{0%{transform:scale(1)}30%{transform:scale(1.35) translateY(-5px)}100%{transform:scale(1)}}
 
-/* ================= v10: Golden-hour shoreline (lyrics + chat) ================= */
-:root{--ig:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans Telugu",sans-serif;
-  --sand:#FFF1DE;--sand2:#F2D9B8;--coral:#F0657A;--coral2:#FF9A87;--sea1:#38B7B4;--sea2:#16899D;--sea3:#0C5A73;--sea4:#083D52}
+/* ================= v11: sunlit ocean (lyrics + chat) ================= */
+:root{--ig:"Inter","Noto Sans Telugu",sans-serif;--aq1:#5FDCEE;--aq2:#0FA3BF;--foam:#EAFBFF;
+  --sea1:#38B7B4;--sea2:#16899D;--sea3:#0C5A73;--sea4:#083D52}
 body.in-room .lyrbg{background:
-  radial-gradient(75% 30% at 50% -4%,rgba(255,184,150,.62),rgba(255,206,170,.2) 55%,transparent 78%),
+  radial-gradient(75% 28% at 50% -4%,rgba(255,226,196,.5),rgba(255,226,196,.12) 55%,transparent 78%),
   linear-gradient(180deg,var(--sea1) 0%,var(--sea2) 34%,var(--sea3) 70%,var(--sea4) 100%)}
-body.in-room.lyr .dock{background:linear-gradient(180deg,#127487,#0A4A60);box-shadow:0 -20px 46px -16px rgba(2,28,42,.7),inset 0 1px 0 rgba(255,222,186,.5)}
-.grab::after{background:rgba(255,232,205,.5)}
-.l-head{border-color:rgba(255,226,196,.42)}
-.l-head .round{color:var(--coral)}
+body.in-room.lyr .dock{background:linear-gradient(180deg,#127487,#0A4A60);box-shadow:0 -20px 46px -16px rgba(2,28,42,.7),inset 0 1px 0 rgba(255,255,255,.3)}
+.grab::after{background:rgba(255,255,255,.45)}
+.l-head .round{color:#0A8AA6}
 
-/* lyrics: Apple-Music type, spaced words, glow only on the word being sung */
+/* lyrics: Apple-Music type, tight lines, spaced words, glow only on the word being sung */
 #lyrics{font-family:"Inter","Noto Sans Telugu",-apple-system,"SF Pro Display",sans-serif}
-.line{font-size:30px;font-weight:700;line-height:1.3;letter-spacing:-.012em;word-spacing:.2em;padding:9px 0;color:var(--sand);opacity:.4;transform:scale(.94);
+.line{font-size:30px;font-weight:700;line-height:1.22;letter-spacing:-.012em;word-spacing:.16em;padding:5px 0;color:var(--foam);opacity:.4;transform:scale(.94);
   filter:blur(calc(min(var(--d,4),3)*.7px))}
 .line.active{opacity:1;transform:scale(1);filter:none}
-.line .w{display:inline-block;padding:.08em .015em .14em;transform:none;filter:none;transition:filter .45s var(--e2)}
-.line.active .w{color:transparent;background:linear-gradient(90deg,#fff calc(var(--wp,0)*118% - 18%),rgba(255,236,214,.36) calc(var(--wp,0)*118%));-webkit-background-clip:text;background-clip:text}
-.line.active .w.on{transform:none;filter:drop-shadow(0 0 7px rgba(255,238,216,.55))}
+.line .w{display:inline-block;padding:.1em .02em .16em;margin:-.1em -.02em -.16em;transform:none;filter:none;transition:filter .45s var(--e2)}
+.line.active .w{color:transparent;background:linear-gradient(90deg,#fff calc(var(--wp,0)*118% - 18%),rgba(220,248,255,.36) calc(var(--wp,0)*118%));-webkit-background-clip:text;background-clip:text}
+.line.active .w.on{transform:none;filter:drop-shadow(0 0 7px rgba(210,246,255,.6))}
 #lyrics.inbrk .line.active{opacity:.38;transform:scale(.94)}
-#lyrics.plainmode .line{word-spacing:.18em;font-size:24px}
+#lyrics.plainmode .line{word-spacing:.16em;font-size:24px}
 
 /* instrumental break: dancing notes */
-.brk{display:flex;align-items:center;gap:18px;height:64px;padding:0 4px;opacity:0;pointer-events:none;color:var(--sand);transition:opacity .5s,translate 1.05s var(--spring)}
+.brk{display:flex;align-items:center;gap:16px;height:46px;padding:0 4px;opacity:0;pointer-events:none;color:#fff;transition:opacity .5s,translate 1.05s var(--spring)}
 .brk.on{opacity:1}
-.brk .nt{width:28px;height:28px;transform-origin:50% 90%;animation:ntdance 1.15s ease-in-out infinite;animation-delay:calc(var(--i)*.19s);animation-play-state:paused}
-.brk .nt:nth-child(2){color:var(--coral2)}.brk .nt:nth-child(3){color:#FFD9A8}
+.brk .nt{width:26px;height:26px;transform-origin:50% 90%;animation:ntdance 1.15s ease-in-out infinite;animation-delay:calc(var(--i)*.19s);animation-play-state:paused}
+.brk .nt:nth-child(2){color:#A6EEF8}.brk .nt:nth-child(3){color:#CFF6FB}
 .brk.on .nt{animation-play-state:running}
-@keyframes ntdance{0%,100%{transform:translateY(0) rotate(-10deg) scale(1)}22%{transform:translateY(-11px) rotate(9deg) scale(1.14)}50%{transform:translateY(0) rotate(-7deg) scale(.96)}74%{transform:translateY(-6px) rotate(11deg) scale(1.08)}}
+@keyframes ntdance{0%,100%{transform:translateY(0) rotate(-10deg) scale(1)}22%{transform:translateY(-10px) rotate(9deg) scale(1.14)}50%{transform:translateY(0) rotate(-7deg) scale(.96)}74%{transform:translateY(-5px) rotate(11deg) scale(1.08)}}
 
-/* chat: Instagram-style type + coral / sand bubbles */
-.msgs .mb,.chat-form input,.mq,.quote span{font-family:var(--ig)}
-.msgs .mb{font-size:15px;line-height:1.35;font-weight:400;letter-spacing:0}
-.chat-form input{font-size:16px}
-.m.me .mb{background:linear-gradient(150deg,var(--coral2) 0%,var(--coral) 100%);color:#fff;box-shadow:0 12px 22px -12px rgba(120,24,46,.6),inset 0 1px 0 rgba(255,255,255,.4)}
-.m.her .mb{background:linear-gradient(180deg,#FFF8EE,#F5E3C8);color:#2D3D40;box-shadow:0 12px 22px -14px rgba(2,28,42,.6),inset 0 1px 0 #fff}
-.m.typing i{background:var(--sand2)}
-.send{background:linear-gradient(145deg,var(--coral2),var(--coral));box-shadow:0 12px 22px -8px rgba(2,28,42,.7),inset 0 1px 0 rgba(255,255,255,.5)}
-.send:disabled{background:linear-gradient(145deg,rgba(255,241,222,.5),rgba(255,241,222,.26));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+/* chat: Instagram-style (bundled font, so a custom phone font can't override it) */
+.msgs,.msgs .mb,.rq,.chat-form input,.quote span{font-family:var(--ig)}
+.msgs{padding:30px 16px 8px;gap:2px}
+.m{max-width:78%}
+.msgs .m.me + .m.her,.msgs .m.her + .m.me{margin-top:8px}
+.msgs .m.me .mb,.msgs .m.her .mb{padding:9px 14px;border-radius:22px;font-size:15px;line-height:1.33;font-weight:400;letter-spacing:0;border:0}
+.msgs .m.me .mb{background:linear-gradient(165deg,#2DCBE3 0%,#0A86A8 100%);color:#fff;box-shadow:0 8px 16px -10px rgba(2,28,42,.8)}
+.msgs .m.her .mb{background:rgba(255,255,255,.17);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
+.msgs .m.me + .m.me .mb{border-top-right-radius:7px}
+.msgs .m.me:has(+ .m.me) .mb{border-bottom-right-radius:7px}
+.msgs .m.her + .m.her .mb{border-top-left-radius:7px}
+.msgs .m.her:has(+ .m.her) .mb{border-bottom-left-radius:7px}
+.msgs .m.emo .mb{background:none;box-shadow:none;padding:1px 2px;font-size:38px;line-height:1.15}
+.m.typing i{background:#CFF6FB}
+.send{background:linear-gradient(145deg,var(--aq1),var(--aq2));box-shadow:0 12px 22px -8px rgba(2,28,42,.7),inset 0 1px 0 rgba(255,255,255,.5)}
+.send:disabled{background:linear-gradient(145deg,rgba(255,255,255,.45),rgba(255,255,255,.22));box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
 
-/* two clearly different quotes: lyric = cursive in quotes, message reply = Instagram pill */
+/* replies, Instagram way: the quoted bubble sits dimmed behind the reply, with a thin line along the side */
+.m.rp{position:relative}
+.m.rp::before{content:"";position:absolute;top:3px;bottom:3px;width:2px;border-radius:2px;background:rgba(255,255,255,.4)}
+.m.her.rp::before{left:-9px}.m.me.rp::before{right:-9px}
+.rq{max-width:100%;padding:8px 14px 18px;margin-bottom:-12px;border-radius:20px;font-size:13px;line-height:1.3;color:rgba(255,255,255,.72);
+  background:rgba(255,255,255,.12);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.m.me .rq{align-self:flex-end}.m.her .rq{align-self:flex-start}
+.rq.lyr{font-family:var(--serif);font-style:italic;font-weight:600;font-size:15.5px;color:#DDF8FD;background:rgba(95,220,238,.2)}
+.rq.lyr::before{content:"\266A\00a0";font-style:normal;font-size:12px;color:#8FEAF5}
+.msgs .m .mb{position:relative;z-index:1}
+
+/* reply preview above the input */
+.quote{padding:8px 8px 8px 12px;border-radius:16px;background:rgba(255,255,255,.14)}
 .quote .qtxt b{display:none}
-.quote[data-k=lyric]{background:rgba(255,205,170,.2)}
-.quote[data-k=lyric] .qbar{background:linear-gradient(var(--coral2),#FFD9A8)}
-.quote[data-k=lyric] .qtxt span{font-family:var(--serif);font-style:italic;font-weight:600;font-size:17px;color:#FFEBD6}
+.quote .qbar{background:rgba(255,255,255,.7)}
+.quote .qtxt span{font-family:var(--ig);font-style:normal;font-weight:400;font-size:14px;color:#fff}
+.quote[data-k=lyric] .qbar{background:var(--aq1)}
+.quote[data-k=lyric] .qtxt span{font-family:var(--serif);font-style:italic;font-weight:600;font-size:17px;color:#E6FAFE}
 .quote[data-k=lyric] .qtxt span::before{content:"\201C"}.quote[data-k=lyric] .qtxt span::after{content:"\201D"}
-.quote[data-k=msg]{background:rgba(255,255,255,.16)}
-.quote[data-k=msg] .qbar{background:#fff;opacity:.85}
-.quote[data-k=msg] .qtxt span{font-family:var(--ig);font-style:normal;font-size:14px;color:#fff}
-.m .mq.lyr{font-family:var(--serif);font-style:italic;font-size:16.5px;font-weight:600;color:#FFE6CC;border-color:rgba(255,190,155,.85)}
-.m .mq.lyr::before{content:"\266A\00a0";font-style:normal;font-size:13px;color:var(--coral2)}
-.m.her .mq.lyr{color:#FFE6CC}
-.m .mq.rep,.m.me .mq.rep,.m.her .mq.rep{font-family:var(--ig);font-style:normal;font-size:13px;line-height:1.3;color:rgba(255,255,255,.86);background:rgba(255,255,255,.17);
-  border:0;border-radius:18px;padding:8px 13px 16px;margin:0 0 -11px;text-align:left;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.m .mb{position:relative;z-index:1}
 
-/* reactions: stronger buttons, darker note, no ring */
-.reacts button{background:linear-gradient(180deg,#FFF8EE,#F3DEC0);border:1px solid rgba(255,255,255,.8);box-shadow:inset 0 1px 0 #fff,0 8px 16px -10px rgba(2,28,42,.7)}
-.reacts button[data-r="\1F3B6"]{filter:brightness(.7) saturate(1.9) contrast(1.2)}
+/* reactions: pale-aqua glass, strong note, no ring */
+.reacts button{background:linear-gradient(180deg,rgba(255,255,255,.94),rgba(205,239,246,.9));border:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff,0 8px 16px -10px rgba(2,28,42,.7)}
+.reacts .re{display:inline-block;line-height:1}
+.reacts button[data-r="\1F3B6"] .re{filter:brightness(.62) saturate(2) contrast(1.25)}
 .rxe.dk{filter:brightness(.7) saturate(1.9) contrast(1.2) drop-shadow(0 0 1.5px #fff) drop-shadow(0 6px 12px rgba(2,28,42,.5))}
 .rx-ring{display:none!important}
 
-/* tab bar: floating pill, active tab opens up with its name */
+/* tab bar: floating pill, active tab opens with its name */
 .tabbar{margin:0 16px calc(env(safe-area-inset-bottom) + 10px);height:66px;padding:7px;gap:4px;border-radius:33px}
 .tab{flex:1 1 0;height:52px;border-radius:26px;display:flex;align-items:center;justify-content:center;gap:0;overflow:hidden;
   transition:flex-grow .55s var(--spring),background .35s,color .3s,box-shadow .35s,transform .25s}
@@ -934,11 +945,11 @@ body.in-room.lyr .dock{background:linear-gradient(180deg,#127487,#0A4A60);box-sh
 .tab .tl{max-width:0;opacity:0;overflow:hidden;white-space:nowrap;font:650 14px/1 var(--ig);letter-spacing:.01em;transition:max-width .55s var(--spring),opacity .3s}
 .tab.active .tl{max-width:90px;opacity:1}
 .tab .dot{top:9px;right:14px}
-body.in-room.lyr .tabbar{background:rgba(8,61,82,.5);border:1px solid rgba(255,226,196,.3);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
-  box-shadow:0 22px 44px -16px rgba(2,28,42,.7),inset 0 1px 0 rgba(255,236,214,.35)}
-body.in-room.lyr .tab{color:rgba(255,241,222,.72)}
-body.in-room.lyr .tab.active{background:linear-gradient(145deg,var(--coral2),var(--coral));color:#fff;box-shadow:0 10px 20px -8px rgba(240,101,122,.75),inset 0 1px 0 rgba(255,255,255,.5)}
-body.in-room.lyr .tab .dot{background:#FFD9A8;border-color:rgba(8,61,82,.8)}
+body.in-room.lyr .tabbar{background:rgba(8,61,82,.5);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  box-shadow:0 22px 44px -16px rgba(2,28,42,.7),inset 0 1px 0 rgba(255,255,255,.3)}
+body.in-room.lyr .tab{color:rgba(255,255,255,.72)}
+body.in-room.lyr .tab.active{background:linear-gradient(145deg,var(--aq1),var(--aq2));color:#fff;box-shadow:0 10px 20px -8px rgba(15,163,191,.8),inset 0 1px 0 rgba(255,255,255,.5)}
+body.in-room.lyr .tab .dot{background:#CFF6FB;border-color:rgba(8,61,82,.8)}
 </style>
 </head>
 <body>
@@ -1510,7 +1521,7 @@ function lyrBody(words){
     out+=`<div class="line" data-i="${i}" style="--d:4">${words(l.text)}</div>`;
     const n=S.lrc[i+1];
     if(sy&&n&&isFinite(n.t)&&isFinite(l.t)){ const gap=n.t-l.t;
-      if(gap>=9) out+=brkHTML(l.t+Math.min(gap-4,Math.max(3.2,l.text.length*.13)),n.t-.3); }
+      if(gap>=10) out+=brkHTML(l.t+Math.min(gap-4,Math.max(3.2,l.text.length*.13)),n.t-.3); }
   });
   return out;
 }
@@ -1644,8 +1655,10 @@ $('#quoteX').onclick = clearQuote;
 /* ==========================================================================
    CHAT + REACTIONS
    ========================================================================== */
+const EMO_ONLY=/^[\p{Extended_Pictographic}\u200d\ufe0f\s]+$/u;
 const msgHTML = m => { let q=m.quote||'', lyr=false; if(q.startsWith('\u266a\u200b')){lyr=true;q=q.slice(2);}
-  return `<div class="m ${m.by}" data-cid="${esc(m.cid||'')}" data-id="${esc(m.id||'')}">${q?(lyr?`<div class="mq lyr">“${esc(q)}”</div>`:`<div class="mq rep">${esc(q)}</div>`):''}<div class="mb">${esc(m.text)}</div></div>`; };
+  const cls=['m',m.by]; if(q)cls.push('rp'); if(EMO_ONLY.test(m.text||''))cls.push('emo');
+  return `<div class="${cls.join(' ')}" data-cid="${esc(m.cid||'')}" data-id="${esc(m.id||'')}">${q?`<div class="rq ${lyr?'lyr':'rep'}">${lyr?'\u201C'+esc(q)+'\u201D':esc(q)}</div>`:''}<div class="mb">${esc(m.text)}</div></div>`; };
 function pushMessage(m){
   S.msgs.push(m);
   const list = $('#msgs'); const ty=list.querySelector('.m.typing'); if(ty)ty.remove(); list.insertAdjacentHTML('beforeend', msgHTML(m)); list.scrollTop = list.scrollHeight;
@@ -1702,7 +1715,7 @@ const isPooja=()=>/^pooja$/i.test(S.me.name||'');
 const partnerPron=()=>isPooja()?'him':'her';
 const partnerName=()=>S.her.name||(isPooja()?'Kiran':'Pooja');
 const reactionSet=()=>['🤍',isPooja()?'💃':'🕺','✨','🤩','🎶'];
-function renderReactions(){ $('#reacts').innerHTML = reactionSet().map(r=>`<button type="button" data-r="${r}" aria-label="React ${r}">${r}</button>`).join(''); }
+function renderReactions(){ $('#reacts').innerHTML = reactionSet().map(r=>`<button type="button" data-r="${r}" aria-label="React ${r}"><span class="re">${r}</span></button>`).join(''); }
 renderReactions();
 $('#reacts').onclick = e => { const b = e.target.closest('button'); if(!b) return; DuoTune.emit('reaction:send',{emoji:b.dataset.r}); floatReaction(b.dataset.r, true, b); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); };
 const notoUrl=e=>'https://fonts.gstatic.com/s/e/notoemoji/latest/'+[...e].map(c=>c.codePointAt(0).toString(16)).filter(h=>h!=='fe0f').join('_')+'/512.webp';
