@@ -27,6 +27,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '32kb', strict: true }));
 
+app.get('/', (_req, res) => res.json({ ok: true, service: 'duotune-api' }));
 app.get('/health', (_req, res) => res.json({ ok: true, service: 'duotune-api' }));
 
 const loginLimiter = rateLimit({
